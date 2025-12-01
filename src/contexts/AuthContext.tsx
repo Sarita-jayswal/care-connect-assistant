@@ -47,10 +47,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) {
         console.error("Error fetching user role:", error);
+        console.error("Error details:", error.message, error.code);
         return null;
       }
-      console.log("User role fetched:", data?.role);
-      return (data?.role as UserRole) || null;
+      
+      if (!data) {
+        console.warn("No role found for user:", userId);
+        return null;
+      }
+      
+      console.log("User role fetched successfully:", data.role);
+      return (data.role as UserRole) || null;
     } catch (error) {
       console.error("Exception fetching user role:", error);
       return null;
