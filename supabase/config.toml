@@ -1,1 +1,4 @@
 project_id = "drehzkgdmgumfpeowiyd"
+
+[functions.patient-invitation]
+verify_jwt = false
