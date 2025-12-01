@@ -193,15 +193,7 @@ const Auth = () => {
             console.error("Error creating user record:", insertError);
           }
 
-          // Create staff role entry
-          const { error: roleError } = await supabase.from("user_roles").insert({
-            user_id: data.user.id,
-            role: "staff",
-          });
-
-          if (roleError) {
-            console.error("Error creating user role:", roleError);
-          }
+          // Role is automatically created by the database trigger based on signup metadata
 
           // Show email verification screen
           setVerificationEmail(staffEmail);

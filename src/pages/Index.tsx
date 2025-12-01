@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, ClipboardList, MessageSquare, Users, Activity } from "lucide-react";
@@ -7,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
   const { role } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     openTasks: 0,
     upcomingAppointments: 0,
@@ -17,11 +19,12 @@ const Index = () => {
 
   useEffect(() => {
     if (role === "staff") {
-      fetchStaffStats();
+      // Redirect staff users to the Tasks page
+      navigate("/tasks", { replace: true });
     } else {
       setLoading(false);
     }
-  }, [role]);
+  }, [role, navigate]);
 
   const fetchStaffStats = async () => {
     try {
