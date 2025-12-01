@@ -175,6 +175,16 @@ const Auth = () => {
             console.error("Error creating user record:", insertError);
           }
 
+          // Create staff role entry
+          const { error: roleError } = await supabase.from("user_roles").insert({
+            user_id: data.user.id,
+            role: "staff",
+          });
+
+          if (roleError) {
+            console.error("Error creating user role:", roleError);
+          }
+
           toast({
             title: "Account created!",
             description: "Please check your email to verify your account.",
