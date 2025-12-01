@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const staffItems = [
+  { title: "Dashboard", url: "/", icon: Home },
   { title: "Tasks", url: "/tasks", icon: ClipboardList },
   { title: "Appointments", url: "/appointments", icon: Calendar },
   { title: "Messages", url: "/messages", icon: MessageSquare },
@@ -23,6 +24,7 @@ const staffItems = [
 ];
 
 const patientItems = [
+  { title: "Dashboard", url: "/", icon: Home },
   { title: "My Appointments", url: "/my-appointments", icon: Calendar },
   { title: "My Messages", url: "/my-messages", icon: MessageSquare },
 ];

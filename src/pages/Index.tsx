@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ClipboardList, MessageSquare, Users, Activity } from "lucide-react";
+import { Calendar, ClipboardList, MessageSquare, Users, Activity, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { role } = useAuth();
-  const navigate = useNavigate();
   const [stats, setStats] = useState({
     openTasks: 0,
     upcomingAppointments: 0,
@@ -19,12 +19,11 @@ const Index = () => {
 
   useEffect(() => {
     if (role === "staff") {
-      // Redirect staff users to the Tasks page
-      navigate("/tasks", { replace: true });
+      fetchStaffStats();
     } else {
       setLoading(false);
     }
-  }, [role, navigate]);
+  }, [role]);
 
   const fetchStaffStats = async () => {
     try {
@@ -89,164 +88,212 @@ const Index = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          {role === "staff" ? "Healthcare Staff Overview" : "Welcome to your patient portal"}
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold mb-2">
+          {role === "staff" ? "Staff Dashboard" : "Patient Portal"}
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          {role === "staff" ? "Healthcare management overview and quick access" : "Welcome to your patient portal"}
         </p>
       </div>
 
       {role === "staff" ? (
         <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-            <Card>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Open Tasks</CardTitle>
-                <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                <ClipboardList className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.openTasks}</div>
-                <p className="text-xs text-muted-foreground">Requires attention</p>
+                <div className="text-3xl font-bold">{stats.openTasks}</div>
+                <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
+                <Link to="/tasks">
+                  <Button variant="ghost" size="sm" className="mt-2 h-8 px-2">
+                    View all <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Upcoming Appointments</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Calendar className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.upcomingAppointments}</div>
-                <p className="text-xs text-muted-foreground">Scheduled</p>
+                <div className="text-3xl font-bold">{stats.upcomingAppointments}</div>
+                <p className="text-xs text-muted-foreground mt-1">Scheduled</p>
+                <Link to="/appointments">
+                  <Button variant="ghost" size="sm" className="mt-2 h-8 px-2">
+                    View all <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalPatients}</div>
-                <p className="text-xs text-muted-foreground">Registered</p>
+                <div className="text-3xl font-bold">{stats.totalPatients}</div>
+                <p className="text-xs text-muted-foreground mt-1">Registered</p>
+                <Link to="/patients">
+                  <Button variant="ghost" size="sm" className="mt-2 h-8 px-2">
+                    View all <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Messages (7 days)</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <MessageSquare className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.recentMessages}</div>
-                <p className="text-xs text-muted-foreground">SMS activity</p>
+                <div className="text-3xl font-bold">{stats.recentMessages}</div>
+                <p className="text-xs text-muted-foreground mt-1">SMS activity</p>
+                <Link to="/messages">
+                  <Button variant="ghost" size="sm" className="mt-2 h-8 px-2">
+                    View all <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="shadow-md">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Activity className="h-6 w-6" />
                 Quick Access
               </CardTitle>
-              <CardDescription>Jump to key sections of the healthcare assistant</CardDescription>
+              <CardDescription>Navigate to key sections of the healthcare system</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
-                <a
-                  href="/tasks"
-                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                <Link
+                  to="/tasks"
+                  className="group p-5 rounded-lg border hover:border-primary hover:bg-muted/50 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Follow-up Tasks</p>
-                      <p className="text-sm text-muted-foreground">
-                        Manage patient follow-ups and reminders
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ClipboardList className="h-6 w-6 text-primary" />
+                      <div>
+                        <p className="font-semibold">Follow-up Tasks</p>
+                        <p className="text-sm text-muted-foreground">
+                          Manage patient follow-ups and reminders
+                        </p>
+                      </div>
                     </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                   </div>
-                </a>
-                <a
-                  href="/appointments"
-                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                </Link>
+                
+                <Link
+                  to="/appointments"
+                  className="group p-5 rounded-lg border hover:border-primary hover:bg-muted/50 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Appointments</p>
-                      <p className="text-sm text-muted-foreground">
-                        View all scheduled appointments
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-6 w-6 text-primary" />
+                      <div>
+                        <p className="font-semibold">Appointments</p>
+                        <p className="text-sm text-muted-foreground">
+                          View and manage all appointments
+                        </p>
+                      </div>
                     </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                   </div>
-                </a>
-                <a
-                  href="/messages"
-                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                </Link>
+                
+                <Link
+                  to="/messages"
+                  className="group p-5 rounded-lg border hover:border-primary hover:bg-muted/50 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Messages</p>
-                      <p className="text-sm text-muted-foreground">
-                        SMS conversations with patients
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className="h-6 w-6 text-primary" />
+                      <div>
+                        <p className="font-semibold">Messages</p>
+                        <p className="text-sm text-muted-foreground">
+                          SMS conversations with patients
+                        </p>
+                      </div>
                     </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                   </div>
-                </a>
-                <a
-                  href="/patients"
-                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                </Link>
+                
+                <Link
+                  to="/patients"
+                  className="group p-5 rounded-lg border hover:border-primary hover:bg-muted/50 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Patient Directory</p>
-                      <p className="text-sm text-muted-foreground">
-                        Search and view patient records
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-6 w-6 text-primary" />
+                      <div>
+                        <p className="font-semibold">Patient Directory</p>
+                        <p className="text-sm text-muted-foreground">
+                          Search and view patient records
+                        </p>
+                      </div>
                     </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                   </div>
-                </a>
+                </Link>
               </div>
             </CardContent>
           </Card>
         </>
       ) : (
-        <Card>
+        <Card className="shadow-md">
           <CardHeader>
-            <CardTitle>Welcome to Your Patient Portal</CardTitle>
+            <CardTitle className="text-xl">Welcome to Your Patient Portal</CardTitle>
             <CardDescription>Access your appointments and messages</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
-              <a
-                href="/my-appointments"
-                className="p-6 rounded-lg border hover:bg-muted/50 transition-colors"
+              <Link
+                to="/my-appointments"
+                className="group p-6 rounded-lg border hover:border-primary hover:bg-muted/50 transition-all"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <Calendar className="h-6 w-6 text-primary" />
-                  <p className="font-semibold">My Appointments</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <Calendar className="h-6 w-6 text-primary" />
+                      <p className="font-semibold text-lg">My Appointments</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      View your upcoming and past appointments
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  View your upcoming and past appointments
-                </p>
-              </a>
-              <a
-                href="/my-messages"
-                className="p-6 rounded-lg border hover:bg-muted/50 transition-colors"
+              </Link>
+              
+              <Link
+                to="/my-messages"
+                className="group p-6 rounded-lg border hover:border-primary hover:bg-muted/50 transition-all"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <MessageSquare className="h-6 w-6 text-primary" />
-                  <p className="font-semibold">My Messages</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <MessageSquare className="h-6 w-6 text-primary" />
+                      <p className="font-semibold text-lg">My Messages</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Your conversation history with the clinic
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Your conversation history with the clinic
-                </p>
-              </a>
+              </Link>
             </div>
           </CardContent>
         </Card>
