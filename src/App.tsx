@@ -20,6 +20,7 @@ import ActivateAccount from "./pages/ActivateAccount";
 import NotFound from "./pages/NotFound";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
             <div className="flex h-14 items-center justify-between px-4">
               <SidebarTrigger />
               <div className="flex items-center gap-2">
+                {role === "staff" && <NotificationBell />}
                 <span className="text-sm text-muted-foreground capitalize">{role}</span>
                 <Button variant="ghost" size="sm" onClick={signOut}>
                   <LogOut className="h-4 w-4" />
