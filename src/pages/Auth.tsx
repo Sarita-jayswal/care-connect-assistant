@@ -332,7 +332,19 @@ const Auth = () => {
         throw new Error("Failed to set password. Please try again.");
       }
 
-      // Step 4: Find and link patient record
+      // Step 4: Create user role entry
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: verifyData.user.id,
+          role: "patient",
+        });
+
+      if (roleError) {
+        console.error("Error creating user role:", roleError);
+      }
+
+      // Step 5: Find and link patient record
       const { data: patientData, error: patientError } = await supabase
         .from("patients")
         .select("id")
