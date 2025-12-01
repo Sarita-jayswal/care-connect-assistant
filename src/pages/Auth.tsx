@@ -41,6 +41,13 @@ const Auth = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [signupName, setSignupName] = useState("");
   const [signupNameError, setSignupNameError] = useState<FieldError | null>(null);
+  
+  // OTP verification states
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [pendingPhone, setPendingPhone] = useState<string>("");
+  const [pendingPassword, setPendingPassword] = useState<string>("");
 
   // Validation functions
   const validateEmail = (value: string): FieldError | null => {
@@ -234,62 +241,30 @@ const Auth = () => {
       }
 
       if (isSignup) {
-        const { data, error } = await supabase.auth.signUp({
+        // Step 1: Send OTP to phone number
+        const { error: otpError } = await supabase.auth.signInWithOtp({
           phone: patientPhone,
-          password: patientPassword,
           options: {
-            data: {
-              role: "patient",
-              full_name: signupName,
-            },
+            channel: 'sms',
           },
         });
 
-        if (error) throw error;
-
-        if (data.user) {
-          // Find matching patient by phone
-          const { data: patientData, error: patientError } = await supabase
-            .from("patients")
-            .select("id")
-            .eq("phone", patientPhone)
-            .maybeSingle();
-
-          if (patientError) {
-            console.error("Error finding patient:", patientError);
-          }
-
-          if (patientData) {
-            // Link patient to auth user
-            const { error: updateError } = await supabase
-              .from("patients")
-              .update({ user_id: data.user.id })
-              .eq("id", patientData.id);
-
-            if (updateError) {
-              console.error("Error linking patient:", updateError);
-              throw new Error("Failed to link your account. Please contact support.");
-            }
-
-            toast({
-              title: "Account created and linked!",
-              description: "You can now log in and view your appointments.",
-            });
-            
-            // Clear form
-            setPatientPhone("");
-            setPatientPassword("");
-            setSignupName("");
-            setIsSignup(false);
-          } else {
-            toast({
-              title: "Account created!",
-              description: "Your phone number is not yet registered in our system. Please contact the clinic.",
-              variant: "destructive",
-            });
-          }
+        if (otpError) {
+          console.error("OTP error:", otpError);
+          throw new Error("Failed to send verification code. Please check your phone number.");
         }
+
+        // Store pending data for after OTP verification
+        setPendingPhone(patientPhone);
+        setPendingPassword(patientPassword);
+        setShowOtpInput(true);
+        
+        toast({
+          title: "Verification Code Sent",
+          description: `We've sent a 6-digit code to ${patientPhone}. Please enter it below.`,
+        });
       } else {
+        // Login flow
         const { error } = await supabase.auth.signInWithPassword({
           phone: patientPhone,
           password: patientPassword,
@@ -308,6 +283,137 @@ const Auth = () => {
       toast({
         title: "Error",
         description: error.message || "Authentication failed. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpError(null);
+
+    if (otpCode.length !== 6) {
+      setOtpError("Please enter a 6-digit code");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Step 2: Verify OTP
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+        phone: pendingPhone,
+        token: otpCode,
+        type: 'sms',
+      });
+
+      if (verifyError) {
+        console.error("OTP verification error:", verifyError);
+        throw new Error("Invalid verification code. Please try again.");
+      }
+
+      if (!verifyData.user) {
+        throw new Error("Verification failed. Please try again.");
+      }
+
+      // Step 3: Set password for the verified account
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: pendingPassword,
+        data: {
+          role: "patient",
+          full_name: signupName,
+        },
+      });
+
+      if (updateError) {
+        console.error("Password update error:", updateError);
+        throw new Error("Failed to set password. Please try again.");
+      }
+
+      // Step 4: Find and link patient record
+      const { data: patientData, error: patientError } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("phone", pendingPhone)
+        .maybeSingle();
+
+      if (patientError) {
+        console.error("Error finding patient:", patientError);
+      }
+
+      if (patientData) {
+        // Link patient to auth user
+        const { error: linkError } = await supabase
+          .from("patients")
+          .update({ user_id: verifyData.user.id })
+          .eq("id", patientData.id);
+
+        if (linkError) {
+          console.error("Error linking patient:", linkError);
+          toast({
+            title: "Account Created",
+            description: "Your account is verified, but couldn't link to patient records. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Success!",
+            description: "Your account is verified and ready to use. You can now log in.",
+          });
+        }
+      } else {
+        toast({
+          title: "Account Verified",
+          description: "Your phone is verified, but not registered in our system. Please contact the clinic.",
+          variant: "destructive",
+        });
+      }
+
+      // Reset form and show login
+      setShowOtpInput(false);
+      setOtpCode("");
+      setPendingPhone("");
+      setPendingPassword("");
+      setPatientPhone("");
+      setPatientPassword("");
+      setSignupName("");
+      setIsSignup(false);
+
+    } catch (error: any) {
+      console.error("OTP verification error:", error);
+      setOtpError(error.message || "Verification failed. Please try again.");
+      toast({
+        title: "Verification Failed",
+        description: error.message || "Invalid code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: pendingPhone,
+        options: {
+          channel: 'sms',
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Code Resent",
+        description: "A new verification code has been sent to your phone.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to resend code. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -435,111 +541,183 @@ const Auth = () => {
             </TabsContent>
             
             <TabsContent value="patient">
-              <form onSubmit={handlePatientAuth} className="space-y-4">
-                {isSignup && (
+              {showOtpInput ? (
+                // OTP Verification Form
+                <form onSubmit={handleOtpVerification} className="space-y-4">
+                  <div className="text-center space-y-2 mb-4">
+                    <h3 className="font-semibold">Verify Your Phone</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Enter the 6-digit code sent to {pendingPhone}
+                    </p>
+                  </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="patient-name">Full Name</Label>
+                    <Label htmlFor="otp-code">Verification Code</Label>
+                    <Input
+                      id="otp-code"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="000000"
+                      value={otpCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setOtpCode(value);
+                        setOtpError(null);
+                      }}
+                      className={otpError ? "border-destructive" : ""}
+                      maxLength={6}
+                      required
+                      autoFocus
+                    />
+                    {otpError && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {otpError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button type="submit" className="flex-1" disabled={loading || otpCode.length !== 6}>
+                      {loading ? "Verifying..." : "Verify & Create Account"}
+                    </Button>
+                  </div>
+
+                  <div className="text-center space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={loading}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Resend code
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowOtpInput(false);
+                        setOtpCode("");
+                        setPendingPhone("");
+                        setPendingPassword("");
+                      }}
+                      className="block w-full text-sm text-muted-foreground hover:underline"
+                    >
+                      Change phone number
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                // Regular Patient Auth Form
+                <form onSubmit={handlePatientAuth} className="space-y-4">
+                  {isSignup && (
+                    <div className="space-y-2">
+                      <Label htmlFor="patient-name">Full Name</Label>
+                      <div className="relative">
+                        <Input
+                          id="patient-name"
+                          placeholder="Jane Smith"
+                          value={signupName}
+                          onChange={(e) => handleSignupNameChange(e.target.value)}
+                          onBlur={(e) => setSignupNameError(validateName(e.target.value) || { message: "Name is required", isValid: false })}
+                          className={
+                            signupNameError
+                              ? signupNameError.isValid
+                                ? "border-green-500 pr-10"
+                                : "border-destructive pr-10"
+                              : ""
+                          }
+                          required
+                          maxLength={100}
+                        />
+                        {signupNameError?.isValid && (
+                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                        )}
+                      </div>
+                      {signupNameError && !signupNameError.isValid && (
+                        <p className="text-sm text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {signupNameError.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="patient-phone">Phone Number</Label>
                     <div className="relative">
                       <Input
-                        id="patient-name"
-                        placeholder="Jane Smith"
-                        value={signupName}
-                        onChange={(e) => handleSignupNameChange(e.target.value)}
-                        onBlur={(e) => setSignupNameError(validateName(e.target.value) || { message: "Name is required", isValid: false })}
+                        id="patient-phone"
+                        type="tel"
+                        placeholder="+61412345678"
+                        value={patientPhone}
+                        onChange={(e) => handlePatientPhoneChange(e.target.value)}
+                        onBlur={(e) => setPatientPhoneError(validatePhone(e.target.value) || { message: "Phone number is required", isValid: false })}
                         className={
-                          signupNameError
-                            ? signupNameError.isValid
+                          patientPhoneError
+                            ? patientPhoneError.isValid
                               ? "border-green-500 pr-10"
                               : "border-destructive pr-10"
                             : ""
                         }
                         required
-                        maxLength={100}
+                        maxLength={20}
                       />
-                      {signupNameError?.isValid && (
+                      {patientPhoneError?.isValid && (
                         <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
                       )}
                     </div>
-                    {signupNameError && !signupNameError.isValid && (
+                    {patientPhoneError && !patientPhoneError.isValid && (
                       <p className="text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
-                        {signupNameError.message}
+                        {patientPhoneError.message}
+                      </p>
+                    )}
+                    {!patientPhoneError && (
+                      <p className="text-xs text-muted-foreground">
+                        {isSignup 
+                          ? "You'll receive a verification code via SMS"
+                          : "Australian mobile: +61 followed by 9 digits (e.g., +61412345678)"
+                        }
                       </p>
                     )}
                   </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="patient-phone">Phone Number</Label>
-                  <div className="relative">
-                    <Input
-                      id="patient-phone"
-                      type="tel"
-                      placeholder="+61412345678"
-                      value={patientPhone}
-                      onChange={(e) => handlePatientPhoneChange(e.target.value)}
-                      onBlur={(e) => setPatientPhoneError(validatePhone(e.target.value) || { message: "Phone number is required", isValid: false })}
-                      className={
-                        patientPhoneError
-                          ? patientPhoneError.isValid
-                            ? "border-green-500 pr-10"
-                            : "border-destructive pr-10"
-                          : ""
-                      }
-                      required
-                      maxLength={20}
-                    />
-                    {patientPhoneError?.isValid && (
-                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                  <div className="space-y-2">
+                    <Label htmlFor="patient-password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="patient-password"
+                        type="password"
+                        placeholder="Minimum 6 characters"
+                        value={patientPassword}
+                        onChange={(e) => handlePatientPasswordChange(e.target.value)}
+                        onBlur={(e) => setPatientPasswordError(validatePassword(e.target.value) || { message: "Password is required", isValid: false })}
+                        className={
+                          patientPasswordError
+                            ? patientPasswordError.isValid
+                              ? "border-green-500 pr-10"
+                              : "border-destructive pr-10"
+                            : ""
+                        }
+                        required
+                        minLength={6}
+                        maxLength={100}
+                      />
+                      {patientPasswordError?.isValid && (
+                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                    {patientPasswordError && !patientPasswordError.isValid && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {patientPasswordError.message}
+                      </p>
                     )}
                   </div>
-                  {patientPhoneError && !patientPhoneError.isValid && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      {patientPhoneError.message}
-                    </p>
-                  )}
-                  {!patientPhoneError && (
-                    <p className="text-xs text-muted-foreground">
-                      Australian mobile: +61 followed by 9 digits (e.g., +61412345678)
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="patient-password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="patient-password"
-                      type="password"
-                      placeholder="Minimum 6 characters"
-                      value={patientPassword}
-                      onChange={(e) => handlePatientPasswordChange(e.target.value)}
-                      onBlur={(e) => setPatientPasswordError(validatePassword(e.target.value) || { message: "Password is required", isValid: false })}
-                      className={
-                        patientPasswordError
-                          ? patientPasswordError.isValid
-                            ? "border-green-500 pr-10"
-                            : "border-destructive pr-10"
-                          : ""
-                      }
-                      required
-                      minLength={6}
-                      maxLength={100}
-                    />
-                    {patientPasswordError?.isValid && (
-                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
-                    )}
-                  </div>
-                  {patientPasswordError && !patientPasswordError.isValid && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      {patientPasswordError.message}
-                    </p>
-                  )}
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Please wait..." : isSignup ? "Sign Up" : "Sign In"}
-                </Button>
-              </form>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Please wait..." : isSignup ? "Send Verification Code" : "Sign In"}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
           </Tabs>
           
