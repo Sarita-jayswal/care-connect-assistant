@@ -1,4 +1,4 @@
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Bug } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 import {
@@ -15,6 +15,7 @@ import {
 
 const items = [
   { title: "Tasks", url: "/tasks", icon: ClipboardList },
+  { title: "Debug", url: "/debug", icon: Bug },
 ];
 
 export function AppSidebar() {
