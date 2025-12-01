@@ -40,7 +40,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
-            {role === "staff" ? "Staff Portal" : "Patient Portal"}
+            {role === "staff" ? "Healthcare Staff" : "Patient Portal"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
