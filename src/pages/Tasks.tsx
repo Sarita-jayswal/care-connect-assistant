@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import {
   Table,
   TableBody,
@@ -93,9 +94,9 @@ const Tasks = () => {
     }
   };
 
-  const handleStatusUpdate = async (taskId: string, newStatus: string) => {
+  const handleStatusUpdate = async (taskId: string, newStatus: Database['public']['Enums']['follow_up_status']) => {
     try {
-      const isCompleted = newStatus.toLowerCase() === 'completed' || newStatus.toLowerCase() === 'closed';
+      const isCompleted = newStatus === 'DONE';
       const completedAt = isCompleted ? new Date().toISOString() : null;
 
       const { error } = await supabase
@@ -129,7 +130,7 @@ const Tasks = () => {
     }
   };
 
-  const handlePriorityUpdate = async (taskId: string, newPriority: string) => {
+  const handlePriorityUpdate = async (taskId: string, newPriority: Database['public']['Enums']['follow_up_priority']) => {
     try {
       const { error } = await supabase
         .from('follow_up_tasks')
@@ -240,23 +241,22 @@ const Tasks = () => {
                   <TableCell>
                     <Select
                       value={task.task_status}
-                      onValueChange={(value) => handleStatusUpdate(task.task_id, value)}
+                      onValueChange={(value) => handleStatusUpdate(task.task_id, value as Database['public']['Enums']['follow_up_status'])}
                     >
                       <SelectTrigger className="w-[140px] bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-background z-50">
                         <SelectItem value="OPEN">OPEN</SelectItem>
-                        <SelectItem value="PENDING">PENDING</SelectItem>
-                        <SelectItem value="COMPLETED">COMPLETED</SelectItem>
-                        <SelectItem value="OVERDUE">OVERDUE</SelectItem>
+                        <SelectItem value="IN_PROGRESS">IN_PROGRESS</SelectItem>
+                        <SelectItem value="DONE">DONE</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                   <TableCell>
                     <Select
                       value={task.priority}
-                      onValueChange={(value) => handlePriorityUpdate(task.task_id, value)}
+                      onValueChange={(value) => handlePriorityUpdate(task.task_id, value as Database['public']['Enums']['follow_up_priority'])}
                     >
                       <SelectTrigger className="w-[120px] bg-background">
                         <SelectValue />

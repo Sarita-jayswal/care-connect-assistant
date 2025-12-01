@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -23,47 +23,37 @@ const Debug = () => {
   useEffect(() => {
     const fetchDistinctValues = async () => {
       try {
-        // Query to get enum types and their values from pg_enum
-        const { data: enumData, error: enumError } = await supabase.rpc('get_enum_values');
+        // Fetch distinct task statuses
+        const { data: taskStatusData, error: taskStatusError } = await supabase
+          .from('follow_up_tasks')
+          .select('status');
 
-        if (enumError) {
-          console.log('No RPC function available, fetching distinct values instead');
-          
-          // Fallback: Fetch distinct task statuses
-          const { data: taskStatusData, error: taskStatusError } = await supabase
-            .from('follow_up_tasks')
-            .select('status');
+        if (taskStatusError) throw taskStatusError;
 
-          if (taskStatusError) throw taskStatusError;
+        // Fetch distinct priorities
+        const { data: priorityData, error: priorityError } = await supabase
+          .from('follow_up_tasks')
+          .select('priority');
 
-          // Fetch distinct priorities
-          const { data: priorityData, error: priorityError } = await supabase
-            .from('follow_up_tasks')
-            .select('priority');
+        if (priorityError) throw priorityError;
 
-          if (priorityError) throw priorityError;
+        // Fetch distinct appointment statuses
+        const { data: appointmentStatusData, error: appointmentStatusError } = await supabase
+          .from('appointments')
+          .select('status');
 
-          // Fetch distinct appointment statuses
-          const { data: appointmentStatusData, error: appointmentStatusError } = await supabase
-            .from('appointments')
-            .select('status');
+        if (appointmentStatusError) throw appointmentStatusError;
 
-          if (appointmentStatusError) throw appointmentStatusError;
+        // Extract unique values
+        const uniqueTaskStatuses = [...new Set(taskStatusData?.map(item => item.status).filter(Boolean) || [])];
+        const uniquePriorities = [...new Set(priorityData?.map(item => item.priority).filter(Boolean) || [])];
+        const uniqueAppointmentStatuses = [...new Set(appointmentStatusData?.map(item => item.status).filter(Boolean) || [])];
 
-          // Extract unique values
-          const uniqueTaskStatuses = [...new Set(taskStatusData?.map(item => item.status).filter(Boolean) || [])];
-          const uniquePriorities = [...new Set(priorityData?.map(item => item.priority).filter(Boolean) || [])];
-          const uniqueAppointmentStatuses = [...new Set(appointmentStatusData?.map(item => item.status).filter(Boolean) || [])];
-
-          setValues({
-            taskStatuses: uniqueTaskStatuses,
-            priorities: uniquePriorities,
-            appointmentStatuses: uniqueAppointmentStatuses,
-          });
-        } else {
-          // Use enum data from RPC function
-          setValues(enumData);
-        }
+        setValues({
+          taskStatuses: uniqueTaskStatuses,
+          priorities: uniquePriorities,
+          appointmentStatuses: uniqueAppointmentStatuses,
+        });
       } catch (err) {
         console.error('Error fetching distinct values:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch distinct values');
