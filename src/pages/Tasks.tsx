@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface TaskData {
   task_id: string;
@@ -35,6 +37,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showOnlyOpen, setShowOnlyOpen] = useState(true);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -105,10 +108,25 @@ const Tasks = () => {
     );
   }
 
+  const filteredTasks = showOnlyOpen 
+    ? tasks.filter(task => task.task_status === 'OPEN')
+    : tasks;
+
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">Follow-up Tasks</h1>
       
+      <div className="flex items-center gap-3 mb-4">
+        <Switch
+          id="show-open-tasks"
+          checked={showOnlyOpen}
+          onCheckedChange={setShowOnlyOpen}
+        />
+        <Label htmlFor="show-open-tasks" className="cursor-pointer">
+          Show only OPEN tasks
+        </Label>
+      </div>
+
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
@@ -123,14 +141,14 @@ const Tasks = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tasks.length === 0 ? (
+            {filteredTasks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No tasks found
                 </TableCell>
               </TableRow>
             ) : (
-              tasks.map((task) => (
+              filteredTasks.map((task) => (
                 <TableRow key={task.task_id}>
                   <TableCell className="font-medium">{task.task_type}</TableCell>
                   <TableCell>
