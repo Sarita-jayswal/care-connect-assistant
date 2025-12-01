@@ -12,15 +12,67 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar, MapPin, User, Pencil } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 type Appointment = Database["public"]["Tables"]["appointments"]["Row"] & {
   patients: Pick<Database["public"]["Tables"]["patients"]["Row"], "first_name" | "last_name" | "phone">;
 };
 
+const appointmentSchema = z.object({
+  scheduled_start: z.string().min(1, "Start time is required"),
+  scheduled_end: z.string().optional().nullable(),
+  provider_name: z.string().trim().max(200).optional().nullable(),
+  location: z.string().trim().max(500).optional().nullable(),
+  status: z.enum(["SCHEDULED", "CONFIRMED", "RESCHEDULED", "CANCELLED", "MISSED"]),
+});
+
+type AppointmentFormData = z.infer<typeof appointmentSchema>;
+
 const Appointments = () => {
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const form = useForm<AppointmentFormData>({
+    resolver: zodResolver(appointmentSchema),
+    defaultValues: {
+      scheduled_start: "",
+      scheduled_end: "",
+      provider_name: "",
+      location: "",
+      status: "SCHEDULED",
+    },
+  });
 
   useEffect(() => {
     fetchAppointments();
@@ -51,6 +103,54 @@ const Appointments = () => {
       setAppointments([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditAppointment = (appointment: Appointment) => {
+    setEditingAppointment(appointment);
+    form.reset({
+      scheduled_start: new Date(appointment.scheduled_start).toISOString().slice(0, 16),
+      scheduled_end: appointment.scheduled_end 
+        ? new Date(appointment.scheduled_end).toISOString().slice(0, 16) 
+        : "",
+      provider_name: appointment.provider_name || "",
+      location: appointment.location || "",
+      status: appointment.status,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const onSubmit = async (data: AppointmentFormData) => {
+    if (!editingAppointment) return;
+
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          scheduled_start: data.scheduled_start,
+          scheduled_end: data.scheduled_end || null,
+          provider_name: data.provider_name || null,
+          location: data.location || null,
+          status: data.status,
+        })
+        .eq("id", editingAppointment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Appointment updated successfully",
+      });
+
+      setIsEditDialogOpen(false);
+      fetchAppointments();
+    } catch (error) {
+      console.error("Error updating appointment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update appointment",
+        variant: "destructive",
+      });
     }
   };
 
@@ -103,12 +203,13 @@ const Appointments = () => {
                   <TableHead>Provider</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {appointments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       No appointments found
                     </TableCell>
                   </TableRow>
@@ -160,6 +261,15 @@ const Appointments = () => {
                           {appointment.status}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditAppointment(appointment)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -168,6 +278,107 @@ const Appointments = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Appointment</DialogTitle>
+            <DialogDescription>
+              Update appointment details below
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="scheduled_start"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date & Time</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="datetime-local" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="scheduled_end"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date & Time (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} type="datetime-local" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="provider_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Provider Name (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="Dr. Smith" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="Clinic Room 101" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                        <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                        <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
+                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                        <SelectItem value="MISSED">Missed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

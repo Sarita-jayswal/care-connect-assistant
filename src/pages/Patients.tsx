@@ -13,17 +13,61 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Phone, User, Calendar, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Phone, User, Calendar, Plus, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 type Patient = Database["public"]["Tables"]["patients"]["Row"];
 
+const patientSchema = z.object({
+  first_name: z.string().trim().min(1, "First name is required").max(100),
+  last_name: z.string().trim().min(1, "Last name is required").max(100),
+  phone: z.string().trim().regex(/^\+61[2-478]\d{8}$/, "Phone must be in Australian format: +61[2-478]XXXXXXXX"),
+  date_of_birth: z.string().optional(),
+  external_id: z.string().trim().max(100).optional().nullable(),
+});
+
+type PatientFormData = z.infer<typeof patientSchema>;
+
 const Patients = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const form = useForm<PatientFormData>({
+    resolver: zodResolver(patientSchema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      phone: "",
+      date_of_birth: "",
+      external_id: "",
+    },
+  });
 
   useEffect(() => {
     fetchPatients();
@@ -65,6 +109,52 @@ const Patients = () => {
       setFilteredPatients([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditPatient = (patient: Patient) => {
+    setEditingPatient(patient);
+    form.reset({
+      first_name: patient.first_name,
+      last_name: patient.last_name,
+      phone: patient.phone,
+      date_of_birth: patient.date_of_birth || "",
+      external_id: patient.external_id || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const onSubmit = async (data: PatientFormData) => {
+    if (!editingPatient) return;
+
+    try {
+      const { error } = await supabase
+        .from("patients")
+        .update({
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+          date_of_birth: data.date_of_birth || null,
+          external_id: data.external_id || null,
+        })
+        .eq("id", editingPatient.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Patient details updated successfully",
+      });
+
+      setIsEditDialogOpen(false);
+      fetchPatients();
+    } catch (error) {
+      console.error("Error updating patient:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update patient details",
+        variant: "destructive",
+      });
     }
   };
 
@@ -119,12 +209,13 @@ const Patients = () => {
                   <TableHead>Date of Birth</TableHead>
                   <TableHead>External ID</TableHead>
                   <TableHead>Registered</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPatients.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No patients found
                     </TableCell>
                   </TableRow>
@@ -161,6 +252,15 @@ const Patients = () => {
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(patient.created_at).toLocaleDateString()}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditPatient(patient)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -169,6 +269,96 @@ const Patients = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Patient Details</DialogTitle>
+            <DialogDescription>
+              Update patient information below
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="first_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="John" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="last_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Smith" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="+61412345678" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="date_of_birth"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="external_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>External ID (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="External system ID" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
