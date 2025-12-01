@@ -58,29 +58,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer role fetching to avoid blocking
-          setTimeout(async () => {
-            const userRole = await fetchUserRole(session.user.id);
-            setRole(userRole);
-          }, 0);
+          // Fetch role immediately, not deferred
+          const userRole = await fetchUserRole(session.user.id);
+          setRole(userRole);
+          setLoading(false);
         } else {
           setRole(null);
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserRole(session.user.id).then(userRole => {
-          setRole(userRole);
-          setLoading(false);
-        });
+        const userRole = await fetchUserRole(session.user.id);
+        setRole(userRole);
+        setLoading(false);
       } else {
         setLoading(false);
       }
