@@ -35,10 +35,15 @@ const Messages = () => {
         .order("created_at", { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching messages:", error);
+        throw new Error("Failed to load messages");
+      }
+      
       setMessages(data || []);
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.error("Error in fetchMessages:", error);
+      setMessages([]);
     } finally {
       setLoading(false);
     }

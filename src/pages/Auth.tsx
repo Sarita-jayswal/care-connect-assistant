@@ -118,24 +118,39 @@ const Auth = () => {
 
         if (data.user) {
           // Find matching patient by phone
-          const { data: patientData } = await supabase
+          const { data: patientData, error: patientError } = await supabase
             .from("patients")
             .select("id")
             .eq("phone", patientPhone)
-            .single();
+            .maybeSingle();
+
+          if (patientError) {
+            console.error("Error finding patient:", patientError);
+          }
 
           if (patientData) {
             // Link patient to auth user
-            await supabase
+            const { error: updateError } = await supabase
               .from("patients")
               .update({ user_id: data.user.id })
               .eq("id", patientData.id);
-          }
 
-          toast({
-            title: "Account created!",
-            description: "You can now log in.",
-          });
+            if (updateError) {
+              console.error("Error linking patient:", updateError);
+              throw new Error("Failed to link your account. Please contact support.");
+            }
+
+            toast({
+              title: "Account created and linked!",
+              description: "You can now log in and view your appointments.",
+            });
+          } else {
+            toast({
+              title: "Account created!",
+              description: "Your phone number is not yet registered in our system. Please contact the clinic.",
+              variant: "destructive",
+            });
+          }
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({

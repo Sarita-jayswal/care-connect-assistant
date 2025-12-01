@@ -49,11 +49,17 @@ const Patients = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching patients:", error);
+        throw new Error("Failed to load patients");
+      }
+      
       setPatients(data || []);
       setFilteredPatients(data || []);
     } catch (error) {
-      console.error("Error fetching patients:", error);
+      console.error("Error in fetchPatients:", error);
+      setPatients([]);
+      setFilteredPatients([]);
     } finally {
       setLoading(false);
     }

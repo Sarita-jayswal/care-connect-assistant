@@ -40,10 +40,15 @@ const Appointments = () => {
         `)
         .order("scheduled_start", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching appointments:", error);
+        throw new Error("Failed to load appointments");
+      }
+      
       setAppointments(data || []);
     } catch (error) {
-      console.error("Error fetching appointments:", error);
+      console.error("Error in fetchAppointments:", error);
+      setAppointments([]);
     } finally {
       setLoading(false);
     }

@@ -53,12 +53,22 @@ const Tasks = () => {
       try {
         const { data, error } = await supabase.rpc('get_follow_up_tasks');
         
-        if (error) throw error;
+        if (error) {
+          console.error('RPC Error:', error);
+          throw new Error(`Failed to fetch tasks: ${error.message}`);
+        }
         
-        setTasks(data || []);
+        if (!data) {
+          console.warn('No tasks data returned');
+          setTasks([]);
+          return;
+        }
+        
+        setTasks(data);
       } catch (err) {
         console.error('Error fetching tasks:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
+        setTasks([]);
       } finally {
         setLoading(false);
       }

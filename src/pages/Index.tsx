@@ -26,36 +26,44 @@ const Index = () => {
   const fetchStaffStats = async () => {
     try {
       // Get open tasks count
-      const { data: tasks } = await supabase
+      const { count: tasksCount, error: tasksError } = await supabase
         .from("follow_up_tasks")
-        .select("id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .neq("status", "DONE");
 
+      if (tasksError) console.error("Error fetching tasks count:", tasksError);
+
       // Get upcoming appointments count
-      const { data: appointments } = await supabase
+      const { count: appointmentsCount, error: appointmentsError } = await supabase
         .from("appointments")
-        .select("id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .gte("scheduled_start", new Date().toISOString())
         .in("status", ["SCHEDULED", "CONFIRMED"]);
 
+      if (appointmentsError) console.error("Error fetching appointments count:", appointmentsError);
+
       // Get total patients count
-      const { data: patients } = await supabase
+      const { count: patientsCount, error: patientsError } = await supabase
         .from("patients")
-        .select("id", { count: "exact", head: true });
+        .select("*", { count: "exact", head: true });
+
+      if (patientsError) console.error("Error fetching patients count:", patientsError);
 
       // Get recent messages count (last 7 days)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { data: messages } = await supabase
+      const { count: messagesCount, error: messagesError } = await supabase
         .from("messages")
-        .select("id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .gte("created_at", sevenDaysAgo.toISOString());
 
+      if (messagesError) console.error("Error fetching messages count:", messagesError);
+
       setStats({
-        openTasks: tasks?.length || 0,
-        upcomingAppointments: appointments?.length || 0,
-        totalPatients: patients?.length || 0,
-        recentMessages: messages?.length || 0,
+        openTasks: tasksCount || 0,
+        upcomingAppointments: appointmentsCount || 0,
+        totalPatients: patientsCount || 0,
+        recentMessages: messagesCount || 0,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
