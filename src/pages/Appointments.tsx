@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+
+type Patient = Database["public"]["Tables"]["patients"]["Row"];
 import {
   Table,
   TableBody,
@@ -28,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, MapPin, User, Pencil } from "lucide-react";
+import { Calendar, MapPin, User, Pencil, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,14 +56,21 @@ const appointmentSchema = z.object({
   status: z.enum(["SCHEDULED", "CONFIRMED", "RESCHEDULED", "CANCELLED", "MISSED"]),
 });
 
+const createAppointmentSchema = appointmentSchema.extend({
+  patient_id: z.string().uuid("Please select a patient"),
+});
+
 type AppointmentFormData = z.infer<typeof appointmentSchema>;
+type CreateAppointmentFormData = z.infer<typeof createAppointmentSchema>;
 
 const Appointments = () => {
   const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -74,8 +83,21 @@ const Appointments = () => {
     },
   });
 
+  const createForm = useForm<CreateAppointmentFormData>({
+    resolver: zodResolver(createAppointmentSchema),
+    defaultValues: {
+      patient_id: "",
+      scheduled_start: "",
+      scheduled_end: "",
+      provider_name: "",
+      location: "",
+      status: "SCHEDULED",
+    },
+  });
+
   useEffect(() => {
     fetchAppointments();
+    fetchPatients();
   }, []);
 
   const fetchAppointments = async () => {
@@ -103,6 +125,20 @@ const Appointments = () => {
       setAppointments([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPatients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("patients")
+        .select("*")
+        .order("last_name", { ascending: true });
+
+      if (error) throw error;
+      setPatients(data || []);
+    } catch (error) {
+      console.error("Error fetching patients:", error);
     }
   };
 
@@ -154,6 +190,39 @@ const Appointments = () => {
     }
   };
 
+  const onCreateSubmit = async (data: CreateAppointmentFormData) => {
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .insert({
+          patient_id: data.patient_id,
+          scheduled_start: data.scheduled_start,
+          scheduled_end: data.scheduled_end || null,
+          provider_name: data.provider_name || null,
+          location: data.location || null,
+          status: data.status,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Appointment created successfully",
+      });
+
+      setIsCreateDialogOpen(false);
+      createForm.reset();
+      fetchAppointments();
+    } catch (error) {
+      console.error("Error creating appointment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create appointment",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusVariant = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       SCHEDULED: "default",
@@ -180,9 +249,15 @@ const Appointments = () => {
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Appointments</h1>
-        <p className="text-muted-foreground">View and manage all patient appointments</p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Appointments</h1>
+          <p className="text-muted-foreground">View and manage all patient appointments</p>
+        </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Appointment
+        </Button>
       </div>
 
       <Card>
@@ -374,6 +449,131 @@ const Appointments = () => {
                   Cancel
                 </Button>
                 <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create Appointment</DialogTitle>
+            <DialogDescription>
+              Schedule a new appointment for a patient
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...createForm}>
+            <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
+              <FormField
+                control={createForm.control}
+                name="patient_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Patient</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a patient" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {patients.map((patient) => (
+                          <SelectItem key={patient.id} value={patient.id}>
+                            {patient.first_name} {patient.last_name} - {patient.phone}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createForm.control}
+                name="scheduled_start"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date & Time</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="datetime-local" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createForm.control}
+                name="scheduled_end"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date & Time (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} type="datetime-local" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createForm.control}
+                name="provider_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Provider Name (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="Dr. Smith" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createForm.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="Clinic Room 101" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                        <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                        <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
+                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                        <SelectItem value="MISSED">Missed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Create Appointment</Button>
               </div>
             </form>
           </Form>
