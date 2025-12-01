@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,12 @@ const Auth = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [signupName, setSignupName] = useState("");
   const [signupNameError, setSignupNameError] = useState<FieldError | null>(null);
+  
+  // Email verification states
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [canResendEmail, setCanResendEmail] = useState(false);
+  const [resendTimer, setResendTimer] = useState(10);
   
   // OTP verification states
   const [showOtpInput, setShowOtpInput] = useState(false);
@@ -114,6 +120,18 @@ const Auth = () => {
     setSignupName(value);
     setSignupNameError(validateName(value));
   };
+
+  // Email verification countdown timer
+  useEffect(() => {
+    if (showEmailVerification && !canResendEmail && resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (resendTimer === 0) {
+      setCanResendEmail(true);
+    }
+  }, [showEmailVerification, canResendEmail, resendTimer]);
 
   const handleStaffAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,6 +203,12 @@ const Auth = () => {
             console.error("Error creating user role:", roleError);
           }
 
+          // Show email verification screen
+          setVerificationEmail(staffEmail);
+          setShowEmailVerification(true);
+          setCanResendEmail(false);
+          setResendTimer(10);
+          
           toast({
             title: "Account created!",
             description: "Please check your email to verify your account.",
@@ -194,7 +218,6 @@ const Auth = () => {
           setStaffEmail("");
           setStaffPassword("");
           setSignupName("");
-          setIsSignup(false);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -446,6 +469,100 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: verificationEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email Resent",
+        description: "We've sent another verification email. Please check your inbox.",
+      });
+      
+      // Reset timer
+      setCanResendEmail(false);
+      setResendTimer(10);
+    } catch (error: any) {
+      console.error("Resend error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend verification email.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showEmailVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl">Check Your Email</CardTitle>
+            <CardDescription>
+              We've sent a verification link to <strong>{verificationEmail}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <p className="text-sm mb-2">
+                📧 <strong>Check your inbox</strong> (and spam folder)
+              </p>
+              <p className="text-xs text-muted-foreground mb-2">
+                Click the verification link in the email to activate your account.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                The link is valid for 24 hours.
+              </p>
+            </div>
+            
+            {canResendEmail ? (
+              <Button 
+                onClick={handleResendVerification} 
+                disabled={loading}
+                className="w-full"
+                variant="outline"
+              >
+                {loading ? "Sending..." : "Resend Verification Email"}
+              </Button>
+            ) : (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Didn't receive the email?
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Resend available in <strong>{resendTimer}</strong> seconds
+                </p>
+              </div>
+            )}
+            
+            <div className="pt-4 border-t">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowEmailVerification(false);
+                  setIsSignup(false);
+                }}
+                className="w-full"
+              >
+                Back to Sign In
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background p-4">
