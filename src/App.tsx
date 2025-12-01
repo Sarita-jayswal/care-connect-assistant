@@ -9,6 +9,11 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Tasks from "./pages/Tasks";
+import Appointments from "./pages/Appointments";
+import Messages from "./pages/Messages";
+import Patients from "./pages/Patients";
+import MyAppointments from "./pages/MyAppointments";
+import MyMessages from "./pages/MyMessages";
 import Debug from "./pages/Debug";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -76,6 +81,56 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["staff"]}>
             <AuthenticatedLayout>
               <Tasks />
+            </AuthenticatedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/appointments"
+        element={
+          <ProtectedRoute allowedRoles={["staff"]}>
+            <AuthenticatedLayout>
+              <Appointments />
+            </AuthenticatedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messages"
+        element={
+          <ProtectedRoute allowedRoles={["staff"]}>
+            <AuthenticatedLayout>
+              <Messages />
+            </AuthenticatedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients"
+        element={
+          <ProtectedRoute allowedRoles={["staff"]}>
+            <AuthenticatedLayout>
+              <Patients />
+            </AuthenticatedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-appointments"
+        element={
+          <ProtectedRoute allowedRoles={["patient"]}>
+            <AuthenticatedLayout>
+              <MyAppointments />
+            </AuthenticatedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-messages"
+        element={
+          <ProtectedRoute allowedRoles={["patient"]}>
+            <AuthenticatedLayout>
+              <MyMessages />
             </AuthenticatedLayout>
           </ProtectedRoute>
         }

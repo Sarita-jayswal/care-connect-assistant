@@ -1,5 +1,6 @@
-import { ClipboardList, Bug } from "lucide-react";
+import { Home, ClipboardList, Calendar, MessageSquare, Users, Bug } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/contexts/AuthContext";
 
 import {
   Sidebar,
@@ -13,19 +14,34 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
+const staffItems = [
+  { title: "Dashboard", url: "/", icon: Home },
   { title: "Tasks", url: "/tasks", icon: ClipboardList },
+  { title: "Appointments", url: "/appointments", icon: Calendar },
+  { title: "Messages", url: "/messages", icon: MessageSquare },
+  { title: "Patients", url: "/patients", icon: Users },
   { title: "Debug", url: "/debug", icon: Bug },
+];
+
+const patientItems = [
+  { title: "Dashboard", url: "/", icon: Home },
+  { title: "My Appointments", url: "/my-appointments", icon: Calendar },
+  { title: "My Messages", url: "/my-messages", icon: MessageSquare },
 ];
 
 export function AppSidebar() {
   const { open } = useSidebar();
+  const { role } = useAuth();
+  
+  const items = role === "staff" ? staffItems : patientItems;
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Healthcare Assistant</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {role === "staff" ? "Healthcare Staff" : "Patient Portal"}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -33,6 +49,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
+                      end={item.url === "/"}
                       className="hover:bg-sidebar-accent"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
