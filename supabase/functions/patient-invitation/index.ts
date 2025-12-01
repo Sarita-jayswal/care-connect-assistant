@@ -125,6 +125,27 @@ const handler = async (req: Request): Promise<Response> => {
       // Generate activation link
       const activationUrl = `${url.origin}/activate?token=${token}`;
 
+      // Trigger n8n workflow to send SMS invitation (background task)
+      const n8nWebhookUrl = Deno.env.get('N8N_PATIENT_INVITATION_WEBHOOK_URL');
+      if (n8nWebhookUrl) {
+        EdgeRuntime.waitUntil(
+          fetch(n8nWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: patient.phone,
+              first_name: patient.first_name,
+              last_name: patient.last_name,
+              activation_url: activationUrl,
+            }),
+          }).catch(err => {
+            console.error('Failed to trigger n8n SMS workflow:', err);
+          })
+        );
+      } else {
+        console.warn('N8N_PATIENT_INVITATION_WEBHOOK_URL not configured');
+      }
+
       console.log('Patient created successfully:', {
         patientId: patient.id,
         phone: patient.phone,
