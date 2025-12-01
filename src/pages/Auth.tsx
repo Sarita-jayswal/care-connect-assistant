@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 const emailSchema = z.string().trim().min(1, "Email is required").email("Invalid email address").max(255, "Email is too long");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters").max(100, "Password is too long");
@@ -24,6 +24,10 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  
+  // Password visibility
+  const [showStaffPassword, setShowStaffPassword] = useState(false);
+  const [showPatientPassword, setShowPatientPassword] = useState(false);
   
   // Staff login
   const [staffEmail, setStaffEmail] = useState("");
@@ -518,7 +522,7 @@ const Auth = () => {
                   <div className="relative">
                     <Input
                       id="staff-password"
-                      type="password"
+                      type={showStaffPassword ? "text" : "password"}
                       placeholder="Minimum 6 characters"
                       value={staffPassword}
                       onChange={(e) => handleStaffPasswordChange(e.target.value)}
@@ -526,14 +530,26 @@ const Auth = () => {
                       className={
                         staffPasswordError
                           ? staffPasswordError.isValid
-                            ? "border-green-500 pr-10"
-                            : "border-destructive pr-10"
-                          : ""
+                            ? "border-green-500 pr-20"
+                            : "border-destructive pr-20"
+                          : "pr-20"
                       }
                       required
                       minLength={6}
                       maxLength={100}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowStaffPassword(!showStaffPassword)}
+                      className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showStaffPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
                     {staffPasswordError?.isValid && (
                       <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
                     )}
