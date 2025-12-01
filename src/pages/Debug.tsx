@@ -23,40 +23,47 @@ const Debug = () => {
   useEffect(() => {
     const fetchDistinctValues = async () => {
       try {
-        // Fetch distinct task statuses
-        const { data: taskStatusData, error: taskStatusError } = await supabase
-          .from('follow_up_tasks')
-          .select('status')
-          .order('status');
+        // Query to get enum types and their values from pg_enum
+        const { data: enumData, error: enumError } = await supabase.rpc('get_enum_values');
 
-        if (taskStatusError) throw taskStatusError;
+        if (enumError) {
+          console.log('No RPC function available, fetching distinct values instead');
+          
+          // Fallback: Fetch distinct task statuses
+          const { data: taskStatusData, error: taskStatusError } = await supabase
+            .from('follow_up_tasks')
+            .select('status');
 
-        // Fetch distinct priorities
-        const { data: priorityData, error: priorityError } = await supabase
-          .from('follow_up_tasks')
-          .select('priority')
-          .order('priority');
+          if (taskStatusError) throw taskStatusError;
 
-        if (priorityError) throw priorityError;
+          // Fetch distinct priorities
+          const { data: priorityData, error: priorityError } = await supabase
+            .from('follow_up_tasks')
+            .select('priority');
 
-        // Fetch distinct appointment statuses
-        const { data: appointmentStatusData, error: appointmentStatusError } = await supabase
-          .from('appointments')
-          .select('status')
-          .order('status');
+          if (priorityError) throw priorityError;
 
-        if (appointmentStatusError) throw appointmentStatusError;
+          // Fetch distinct appointment statuses
+          const { data: appointmentStatusData, error: appointmentStatusError } = await supabase
+            .from('appointments')
+            .select('status');
 
-        // Extract unique values
-        const uniqueTaskStatuses = [...new Set(taskStatusData?.map(item => item.status).filter(Boolean) || [])];
-        const uniquePriorities = [...new Set(priorityData?.map(item => item.priority).filter(Boolean) || [])];
-        const uniqueAppointmentStatuses = [...new Set(appointmentStatusData?.map(item => item.status).filter(Boolean) || [])];
+          if (appointmentStatusError) throw appointmentStatusError;
 
-        setValues({
-          taskStatuses: uniqueTaskStatuses,
-          priorities: uniquePriorities,
-          appointmentStatuses: uniqueAppointmentStatuses,
-        });
+          // Extract unique values
+          const uniqueTaskStatuses = [...new Set(taskStatusData?.map(item => item.status).filter(Boolean) || [])];
+          const uniquePriorities = [...new Set(priorityData?.map(item => item.priority).filter(Boolean) || [])];
+          const uniqueAppointmentStatuses = [...new Set(appointmentStatusData?.map(item => item.status).filter(Boolean) || [])];
+
+          setValues({
+            taskStatuses: uniqueTaskStatuses,
+            priorities: uniquePriorities,
+            appointmentStatuses: uniqueAppointmentStatuses,
+          });
+        } else {
+          // Use enum data from RPC function
+          setValues(enumData);
+        }
       } catch (err) {
         console.error('Error fetching distinct values:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch distinct values');
@@ -188,10 +195,20 @@ const Debug = () => {
 
       <Alert className="mt-6">
         <AlertDescription>
-          <strong>Note:</strong> These are the actual values currently stored in your database. 
-          Use these exact values (including capitalization) in your dropdown menus.
+          <strong>Note:</strong> These are the actual distinct values currently stored in your database. 
+          Use these exact values (including capitalization) in your dropdown menus. 
+          The values shown here come from querying the actual data in the tables, not from enum type definitions.
         </AlertDescription>
       </Alert>
+
+      <div className="mt-4 p-4 bg-muted rounded-lg">
+        <p className="text-sm font-medium mb-2">Database Info:</p>
+        <ul className="text-sm text-muted-foreground space-y-1">
+          <li>• Task Statuses: from <code className="bg-background px-1 rounded">follow_up_tasks.status</code></li>
+          <li>• Priorities: from <code className="bg-background px-1 rounded">follow_up_tasks.priority</code></li>
+          <li>• Appointment Statuses: from <code className="bg-background px-1 rounded">appointments.status</code></li>
+        </ul>
+      </div>
     </div>
   );
 };
