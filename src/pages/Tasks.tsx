@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -46,7 +45,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showOnlyOpen, setShowOnlyOpen] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<"all" | "open" | "completed">("open");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -184,23 +183,28 @@ const Tasks = () => {
     );
   }
 
-  const filteredTasks = showOnlyOpen 
-    ? tasks.filter(task => task.task_status === 'OPEN')
-    : tasks;
+  const filteredTasks = filterStatus === "all" 
+    ? tasks
+    : filterStatus === "open"
+    ? tasks.filter(task => task.task_status !== 'DONE')
+    : tasks.filter(task => task.task_status === 'DONE');
 
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">Follow-up Tasks</h1>
       
       <div className="flex items-center gap-3 mb-4">
-        <Switch
-          id="show-open-tasks"
-          checked={showOnlyOpen}
-          onCheckedChange={setShowOnlyOpen}
-        />
-        <Label htmlFor="show-open-tasks" className="cursor-pointer">
-          Show only OPEN tasks
-        </Label>
+        <Label htmlFor="filter-status">Filter by status:</Label>
+        <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+          <SelectTrigger id="filter-status" className="w-[180px] bg-background">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-background z-50">
+            <SelectItem value="all">All Tasks</SelectItem>
+            <SelectItem value="open">Open & In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-lg border bg-card">
@@ -213,13 +217,14 @@ const Tasks = () => {
               <TableHead>Appointment Status</TableHead>
               <TableHead>Task Status</TableHead>
               <TableHead>Priority</TableHead>
-              <TableHead>Task Created At</TableHead>
+              <TableHead>Created At</TableHead>
+              <TableHead>Completed At</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredTasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No tasks found
                 </TableCell>
               </TableRow>
@@ -270,6 +275,15 @@ const Tasks = () => {
                   </TableCell>
                   <TableCell>
                     {new Date(task.task_created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {task.completed_at ? (
+                      <span className="text-sm">
+                        {new Date(task.completed_at).toLocaleDateString()} {new Date(task.completed_at).toLocaleTimeString()}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
