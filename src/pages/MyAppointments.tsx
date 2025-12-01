@@ -28,9 +28,18 @@ const MyAppointments = () => {
         .from("patients")
         .select("id")
         .eq("user_id", user!.id)
-        .single();
+        .maybeSingle();
 
-      if (patientError) throw patientError;
+      if (patientError) {
+        console.error("Error fetching patient:", patientError);
+        throw new Error("Failed to load patient information");
+      }
+
+      if (!patientData) {
+        console.warn("No patient record found for this user");
+        setAppointments([]);
+        return;
+      }
 
       // Then get appointments for this patient
       const { data, error } = await supabase
@@ -39,10 +48,15 @@ const MyAppointments = () => {
         .eq("patient_id", patientData.id)
         .order("scheduled_start", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching appointments:", error);
+        throw new Error("Failed to load appointments");
+      }
+      
       setAppointments(data || []);
     } catch (error) {
-      console.error("Error fetching appointments:", error);
+      console.error("Error in fetchMyAppointments:", error);
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
