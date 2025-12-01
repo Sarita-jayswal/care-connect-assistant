@@ -444,9 +444,8 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="staff" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="staff">Staff</TabsTrigger>
-              <TabsTrigger value="patient">Patient</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-1 mb-6">
+              <TabsTrigger value="staff">Healthcare Staff Login</TabsTrigger>
             </TabsList>
             
             <TabsContent value="staff">
@@ -551,187 +550,16 @@ const Auth = () => {
                 </Button>
               </form>
             </TabsContent>
-            
-            <TabsContent value="patient">
-              {showOtpInput ? (
-                // OTP Verification Form
-                <form onSubmit={handleOtpVerification} className="space-y-4">
-                  <div className="text-center space-y-2 mb-4">
-                    <h3 className="font-semibold">Verify Your Phone</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Enter the 6-digit code sent to {pendingPhone}
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="otp-code">Verification Code</Label>
-                    <Input
-                      id="otp-code"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      placeholder="000000"
-                      value={otpCode}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                        setOtpCode(value);
-                        setOtpError(null);
-                      }}
-                      className={otpError ? "border-destructive" : ""}
-                      maxLength={6}
-                      required
-                      autoFocus
-                    />
-                    {otpError && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        {otpError}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button type="submit" className="flex-1" disabled={loading || otpCode.length !== 6}>
-                      {loading ? "Verifying..." : "Verify & Create Account"}
-                    </Button>
-                  </div>
-
-                  <div className="text-center space-y-2">
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      disabled={loading}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Resend code
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowOtpInput(false);
-                        setOtpCode("");
-                        setPendingPhone("");
-                        setPendingPassword("");
-                      }}
-                      className="block w-full text-sm text-muted-foreground hover:underline"
-                    >
-                      Change phone number
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                // Regular Patient Auth Form
-                <form onSubmit={handlePatientAuth} className="space-y-4">
-                  {isSignup && (
-                    <div className="space-y-2">
-                      <Label htmlFor="patient-name">Full Name</Label>
-                      <div className="relative">
-                        <Input
-                          id="patient-name"
-                          placeholder="Jane Smith"
-                          value={signupName}
-                          onChange={(e) => handleSignupNameChange(e.target.value)}
-                          onBlur={(e) => setSignupNameError(validateName(e.target.value) || { message: "Name is required", isValid: false })}
-                          className={
-                            signupNameError
-                              ? signupNameError.isValid
-                                ? "border-green-500 pr-10"
-                                : "border-destructive pr-10"
-                              : ""
-                          }
-                          required
-                          maxLength={100}
-                        />
-                        {signupNameError?.isValid && (
-                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
-                        )}
-                      </div>
-                      {signupNameError && !signupNameError.isValid && (
-                        <p className="text-sm text-destructive flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          {signupNameError.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="patient-phone">Phone Number</Label>
-                    <div className="relative">
-                      <Input
-                        id="patient-phone"
-                        type="tel"
-                        placeholder="+61412345678"
-                        value={patientPhone}
-                        onChange={(e) => handlePatientPhoneChange(e.target.value)}
-                        onBlur={(e) => setPatientPhoneError(validatePhone(e.target.value) || { message: "Phone number is required", isValid: false })}
-                        className={
-                          patientPhoneError
-                            ? patientPhoneError.isValid
-                              ? "border-green-500 pr-10"
-                              : "border-destructive pr-10"
-                            : ""
-                        }
-                        required
-                        maxLength={20}
-                      />
-                      {patientPhoneError?.isValid && (
-                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
-                      )}
-                    </div>
-                    {patientPhoneError && !patientPhoneError.isValid && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        {patientPhoneError.message}
-                      </p>
-                    )}
-                    {!patientPhoneError && (
-                      <p className="text-xs text-muted-foreground">
-                        {isSignup 
-                          ? "You'll receive a verification code via SMS"
-                          : "Australian mobile: +61 followed by 9 digits (e.g., +61412345678)"
-                        }
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="patient-password">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="patient-password"
-                        type="password"
-                        placeholder="Minimum 6 characters"
-                        value={patientPassword}
-                        onChange={(e) => handlePatientPasswordChange(e.target.value)}
-                        onBlur={(e) => setPatientPasswordError(validatePassword(e.target.value) || { message: "Password is required", isValid: false })}
-                        className={
-                          patientPasswordError
-                            ? patientPasswordError.isValid
-                              ? "border-green-500 pr-10"
-                              : "border-destructive pr-10"
-                            : ""
-                        }
-                        required
-                        minLength={6}
-                        maxLength={100}
-                      />
-                      {patientPasswordError?.isValid && (
-                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
-                      )}
-                    </div>
-                    {patientPasswordError && !patientPasswordError.isValid && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        {patientPasswordError.message}
-                      </p>
-                    )}
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Please wait..." : isSignup ? "Send Verification Code" : "Sign In"}
-                  </Button>
-                </form>
-              )}
-            </TabsContent>
           </Tabs>
+          
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-sm text-muted-foreground text-center mb-3">
+              <strong>Patients:</strong> You will receive an account invitation via SMS from your healthcare provider.
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              Use the activation link in the SMS to create your account and access the patient portal.
+            </p>
+          </div>
           
           <div className="mt-4 text-center text-sm">
             <button

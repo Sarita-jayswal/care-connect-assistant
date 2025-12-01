@@ -11,12 +11,15 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Phone, User, Calendar } from "lucide-react";
+import { Phone, User, Calendar, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type Patient = Database["public"]["Tables"]["patients"]["Row"];
 
 const Patients = () => {
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,9 +83,15 @@ const Patients = () => {
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Patient Directory</h1>
-        <p className="text-muted-foreground">Search and view all registered patients</p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Patient Directory</h1>
+          <p className="text-muted-foreground">Search and view all registered patients</p>
+        </div>
+        <Button onClick={() => navigate('/create-patient')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Patient
+        </Button>
       </div>
 
       <Card>
