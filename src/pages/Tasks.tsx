@@ -95,9 +95,15 @@ const Tasks = () => {
 
   const handleStatusUpdate = async (taskId: string, newStatus: string) => {
     try {
+      const isCompleted = newStatus.toLowerCase() === 'completed' || newStatus.toLowerCase() === 'closed';
+      const completedAt = isCompleted ? new Date().toISOString() : null;
+
       const { error } = await supabase
         .from('follow_up_tasks')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          completed_at: completedAt
+        })
         .eq('id', taskId);
 
       if (error) throw error;
@@ -105,7 +111,7 @@ const Tasks = () => {
       // Update local state
       setTasks(tasks.map(task => 
         task.task_id === taskId 
-          ? { ...task, task_status: newStatus }
+          ? { ...task, task_status: newStatus, completed_at: completedAt }
           : task
       ));
 
