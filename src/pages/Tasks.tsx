@@ -12,6 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 interface TaskData {
   task_id: string;
@@ -38,6 +46,7 @@ const Tasks = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showOnlyOpen, setShowOnlyOpen] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -81,6 +90,66 @@ const Tasks = () => {
         return 'destructive';
       default:
         return 'outline';
+    }
+  };
+
+  const handleStatusUpdate = async (taskId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('follow_up_tasks')
+        .update({ status: newStatus })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // Update local state
+      setTasks(tasks.map(task => 
+        task.task_id === taskId 
+          ? { ...task, task_status: newStatus }
+          : task
+      ));
+
+      toast({
+        title: "Success",
+        description: "Task status updated successfully",
+      });
+    } catch (err) {
+      console.error('Error updating task status:', err);
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : 'Failed to update task status',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePriorityUpdate = async (taskId: string, newPriority: string) => {
+    try {
+      const { error } = await supabase
+        .from('follow_up_tasks')
+        .update({ priority: newPriority })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // Update local state
+      setTasks(tasks.map(task => 
+        task.task_id === taskId 
+          ? { ...task, priority: newPriority }
+          : task
+      ));
+
+      toast({
+        title: "Success",
+        description: "Priority updated successfully",
+      });
+    } catch (err) {
+      console.error('Error updating priority:', err);
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : 'Failed to update priority',
+        variant: "destructive",
+      });
     }
   };
 
@@ -163,14 +232,35 @@ const Tasks = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusColor(task.task_status)}>
-                      {task.task_status}
-                    </Badge>
+                    <Select
+                      value={task.task_status}
+                      onValueChange={(value) => handleStatusUpdate(task.task_id, value)}
+                    >
+                      <SelectTrigger className="w-[140px] bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        <SelectItem value="OPEN">OPEN</SelectItem>
+                        <SelectItem value="PENDING">PENDING</SelectItem>
+                        <SelectItem value="COMPLETED">COMPLETED</SelectItem>
+                        <SelectItem value="OVERDUE">OVERDUE</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
+                    <Select
+                      value={task.priority}
+                      onValueChange={(value) => handlePriorityUpdate(task.task_id, value)}
+                    >
+                      <SelectTrigger className="w-[120px] bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        <SelectItem value="LOW">LOW</SelectItem>
+                        <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                        <SelectItem value="HIGH">HIGH</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     {new Date(task.task_created_at).toLocaleDateString()}
