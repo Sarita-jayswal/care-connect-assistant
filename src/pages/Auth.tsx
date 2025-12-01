@@ -12,7 +12,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 const emailSchema = z.string().trim().min(1, "Email is required").email("Invalid email address").max(255, "Email is too long");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters").max(100, "Password is too long");
-const phoneSchema = z.string().trim().min(1, "Phone number is required").regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone format (e.g., +1234567890)").max(20, "Phone number is too long");
+const phoneSchema = z.string().trim().min(1, "Phone number is required").regex(/^\+61[2-478]\d{8}$/, "Invalid Australian phone number (e.g., +61412345678)").max(20, "Phone number is too long");
 const nameSchema = z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long");
 
 interface FieldError {
@@ -474,7 +474,7 @@ const Auth = () => {
                     <Input
                       id="patient-phone"
                       type="tel"
-                      placeholder="+1234567890"
+                      placeholder="+61412345678"
                       value={patientPhone}
                       onChange={(e) => handlePatientPhoneChange(e.target.value)}
                       onBlur={(e) => setPatientPhoneError(validatePhone(e.target.value) || { message: "Phone number is required", isValid: false })}
@@ -500,7 +500,7 @@ const Auth = () => {
                   )}
                   {!patientPhoneError && (
                     <p className="text-xs text-muted-foreground">
-                      Include country code (e.g., +1 for US)
+                      Australian mobile: +61 followed by 9 digits (e.g., +61412345678)
                     </p>
                   )}
                 </div>
