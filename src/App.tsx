@@ -14,7 +14,6 @@ import Messages from "./pages/Messages";
 import Patients from "./pages/Patients";
 import MyAppointments from "./pages/MyAppointments";
 import MyMessages from "./pages/MyMessages";
-import Debug from "./pages/Debug";
 import Auth from "./pages/Auth";
 import CreatePatient from "./pages/CreatePatient";
 import ActivateAccount from "./pages/ActivateAccount";
@@ -144,16 +143,6 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["patient"]}>
             <AuthenticatedLayout>
               <MyMessages />
-            </AuthenticatedLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/debug"
-        element={
-          <ProtectedRoute allowedRoles={["staff"]}>
-            <AuthenticatedLayout>
-              <Debug />
             </AuthenticatedLayout>
           </ProtectedRoute>
         }
