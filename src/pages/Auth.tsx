@@ -8,10 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 
-const emailSchema = z.string().email("Invalid email address").max(255);
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters").max(100);
-const phoneSchema = z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone format (e.g., +1234567890)").max(20);
+const emailSchema = z.string().trim().min(1, "Email is required").email("Invalid email address").max(255, "Email is too long");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters").max(100, "Password is too long");
+const phoneSchema = z.string().trim().min(1, "Phone number is required").regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone format (e.g., +1234567890)").max(20, "Phone number is too long");
+const nameSchema = z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long");
+
+interface FieldError {
+  message: string;
+  isValid: boolean;
+}
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -21,23 +28,113 @@ const Auth = () => {
   // Staff login
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
+  const [staffEmailError, setStaffEmailError] = useState<FieldError | null>(null);
+  const [staffPasswordError, setStaffPasswordError] = useState<FieldError | null>(null);
   
   // Patient login
   const [patientPhone, setPatientPhone] = useState("");
   const [patientPassword, setPatientPassword] = useState("");
+  const [patientPhoneError, setPatientPhoneError] = useState<FieldError | null>(null);
+  const [patientPasswordError, setPatientPasswordError] = useState<FieldError | null>(null);
   
   // Signup states
   const [isSignup, setIsSignup] = useState(false);
   const [signupName, setSignupName] = useState("");
+  const [signupNameError, setSignupNameError] = useState<FieldError | null>(null);
+
+  // Validation functions
+  const validateEmail = (value: string): FieldError | null => {
+    if (!value.trim()) return null; // Don't show error for empty field until blur
+    const result = emailSchema.safeParse(value);
+    if (!result.success) {
+      return { message: result.error.issues[0].message, isValid: false };
+    }
+    return { message: "", isValid: true };
+  };
+
+  const validatePassword = (value: string): FieldError | null => {
+    if (!value) return null;
+    const result = passwordSchema.safeParse(value);
+    if (!result.success) {
+      return { message: result.error.issues[0].message, isValid: false };
+    }
+    return { message: "", isValid: true };
+  };
+
+  const validatePhone = (value: string): FieldError | null => {
+    if (!value.trim()) return null;
+    const result = phoneSchema.safeParse(value);
+    if (!result.success) {
+      return { message: result.error.issues[0].message, isValid: false };
+    }
+    return { message: "", isValid: true };
+  };
+
+  const validateName = (value: string): FieldError | null => {
+    if (!value.trim()) return null;
+    const result = nameSchema.safeParse(value);
+    if (!result.success) {
+      return { message: result.error.issues[0].message, isValid: false };
+    }
+    return { message: "", isValid: true };
+  };
+
+  const handleStaffEmailChange = (value: string) => {
+    setStaffEmail(value);
+    setStaffEmailError(validateEmail(value));
+  };
+
+  const handleStaffPasswordChange = (value: string) => {
+    setStaffPassword(value);
+    setStaffPasswordError(validatePassword(value));
+  };
+
+  const handlePatientPhoneChange = (value: string) => {
+    setPatientPhone(value);
+    setPatientPhoneError(validatePhone(value));
+  };
+
+  const handlePatientPasswordChange = (value: string) => {
+    setPatientPassword(value);
+    setPatientPasswordError(validatePassword(value));
+  };
+
+  const handleSignupNameChange = (value: string) => {
+    setSignupName(value);
+    setSignupNameError(validateName(value));
+  };
 
   const handleStaffAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all fields before submission
+    const emailValidation = validateEmail(staffEmail);
+    const passwordValidation = validatePassword(staffPassword);
+    const nameValidation = isSignup ? validateName(signupName) : null;
+
+    setStaffEmailError(emailValidation);
+    setStaffPasswordError(passwordValidation);
+    if (isSignup) setSignupNameError(nameValidation);
+
+    // Check for validation errors
+    if (!emailValidation?.isValid || !passwordValidation?.isValid || (isSignup && !nameValidation?.isValid)) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Validate inputs
+      // Final validation with zod
       emailSchema.parse(staffEmail);
       passwordSchema.parse(staffPassword);
+      if (isSignup) {
+        nameSchema.parse(signupName);
+      }
 
       if (isSignup) {
         const { data, error } = await supabase.auth.signUp({
@@ -56,17 +153,27 @@ const Auth = () => {
 
         if (data.user) {
           // Create entry in users table
-          await supabase.from("users").insert({
+          const { error: insertError } = await supabase.from("users").insert({
             user_id: data.user.id,
             email: staffEmail,
             full_name: signupName,
             role: "COORDINATOR",
           });
 
+          if (insertError) {
+            console.error("Error creating user record:", insertError);
+          }
+
           toast({
             title: "Account created!",
             description: "Please check your email to verify your account.",
           });
+          
+          // Clear form
+          setStaffEmail("");
+          setStaffPassword("");
+          setSignupName("");
+          setIsSignup(false);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -83,9 +190,10 @@ const Auth = () => {
         navigate("/tasks");
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       toast({
         title: "Error",
-        description: error.message || "Authentication failed",
+        description: error.message || "Authentication failed. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -95,12 +203,35 @@ const Auth = () => {
 
   const handlePatientAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all fields before submission
+    const phoneValidation = validatePhone(patientPhone);
+    const passwordValidation = validatePassword(patientPassword);
+    const nameValidation = isSignup ? validateName(signupName) : null;
+
+    setPatientPhoneError(phoneValidation);
+    setPatientPasswordError(passwordValidation);
+    if (isSignup) setSignupNameError(nameValidation);
+
+    // Check for validation errors
+    if (!phoneValidation?.isValid || !passwordValidation?.isValid || (isSignup && !nameValidation?.isValid)) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Validate inputs
+      // Final validation with zod
       phoneSchema.parse(patientPhone);
       passwordSchema.parse(patientPassword);
+      if (isSignup) {
+        nameSchema.parse(signupName);
+      }
 
       if (isSignup) {
         const { data, error } = await supabase.auth.signUp({
@@ -144,6 +275,12 @@ const Auth = () => {
               title: "Account created and linked!",
               description: "You can now log in and view your appointments.",
             });
+            
+            // Clear form
+            setPatientPhone("");
+            setPatientPassword("");
+            setSignupName("");
+            setIsSignup(false);
           } else {
             toast({
               title: "Account created!",
@@ -167,9 +304,10 @@ const Auth = () => {
         navigate("/");
       }
     } catch (error: any) {
+      console.error("Patient auth error:", error);
       toast({
         title: "Error",
-        description: error.message || "Authentication failed",
+        description: error.message || "Authentication failed. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -198,39 +336,97 @@ const Auth = () => {
                 {isSignup && (
                   <div className="space-y-2">
                     <Label htmlFor="staff-name">Full Name</Label>
-                    <Input
-                      id="staff-name"
-                      placeholder="John Doe"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      required
-                      maxLength={100}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="staff-name"
+                        placeholder="John Doe"
+                        value={signupName}
+                        onChange={(e) => handleSignupNameChange(e.target.value)}
+                        onBlur={(e) => setSignupNameError(validateName(e.target.value) || { message: "Name is required", isValid: false })}
+                        className={
+                          signupNameError
+                            ? signupNameError.isValid
+                              ? "border-green-500 pr-10"
+                              : "border-destructive pr-10"
+                            : ""
+                        }
+                        required
+                        maxLength={100}
+                      />
+                      {signupNameError?.isValid && (
+                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                    {signupNameError && !signupNameError.isValid && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {signupNameError.message}
+                      </p>
+                    )}
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="staff-email">Email</Label>
-                  <Input
-                    id="staff-email"
-                    type="email"
-                    placeholder="staff@hospital.com"
-                    value={staffEmail}
-                    onChange={(e) => setStaffEmail(e.target.value)}
-                    required
-                    maxLength={255}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="staff-email"
+                      type="email"
+                      placeholder="staff@hospital.com"
+                      value={staffEmail}
+                      onChange={(e) => handleStaffEmailChange(e.target.value)}
+                      onBlur={(e) => setStaffEmailError(validateEmail(e.target.value) || { message: "Email is required", isValid: false })}
+                      className={
+                        staffEmailError
+                          ? staffEmailError.isValid
+                            ? "border-green-500 pr-10"
+                            : "border-destructive pr-10"
+                          : ""
+                      }
+                      required
+                      maxLength={255}
+                    />
+                    {staffEmailError?.isValid && (
+                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                    )}
+                  </div>
+                  {staffEmailError && !staffEmailError.isValid && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {staffEmailError.message}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="staff-password">Password</Label>
-                  <Input
-                    id="staff-password"
-                    type="password"
-                    value={staffPassword}
-                    onChange={(e) => setStaffPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    maxLength={100}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="staff-password"
+                      type="password"
+                      placeholder="Minimum 6 characters"
+                      value={staffPassword}
+                      onChange={(e) => handleStaffPasswordChange(e.target.value)}
+                      onBlur={(e) => setStaffPasswordError(validatePassword(e.target.value) || { message: "Password is required", isValid: false })}
+                      className={
+                        staffPasswordError
+                          ? staffPasswordError.isValid
+                            ? "border-green-500 pr-10"
+                            : "border-destructive pr-10"
+                          : ""
+                      }
+                      required
+                      minLength={6}
+                      maxLength={100}
+                    />
+                    {staffPasswordError?.isValid && (
+                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                    )}
+                  </div>
+                  {staffPasswordError && !staffPasswordError.isValid && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {staffPasswordError.message}
+                    </p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Please wait..." : isSignup ? "Sign Up" : "Sign In"}
@@ -243,42 +439,102 @@ const Auth = () => {
                 {isSignup && (
                   <div className="space-y-2">
                     <Label htmlFor="patient-name">Full Name</Label>
-                    <Input
-                      id="patient-name"
-                      placeholder="Jane Smith"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      required
-                      maxLength={100}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="patient-name"
+                        placeholder="Jane Smith"
+                        value={signupName}
+                        onChange={(e) => handleSignupNameChange(e.target.value)}
+                        onBlur={(e) => setSignupNameError(validateName(e.target.value) || { message: "Name is required", isValid: false })}
+                        className={
+                          signupNameError
+                            ? signupNameError.isValid
+                              ? "border-green-500 pr-10"
+                              : "border-destructive pr-10"
+                            : ""
+                        }
+                        required
+                        maxLength={100}
+                      />
+                      {signupNameError?.isValid && (
+                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                    {signupNameError && !signupNameError.isValid && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {signupNameError.message}
+                      </p>
+                    )}
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="patient-phone">Phone Number</Label>
-                  <Input
-                    id="patient-phone"
-                    type="tel"
-                    placeholder="+1234567890"
-                    value={patientPhone}
-                    onChange={(e) => setPatientPhone(e.target.value)}
-                    required
-                    maxLength={20}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Include country code (e.g., +1 for US)
-                  </p>
+                  <div className="relative">
+                    <Input
+                      id="patient-phone"
+                      type="tel"
+                      placeholder="+1234567890"
+                      value={patientPhone}
+                      onChange={(e) => handlePatientPhoneChange(e.target.value)}
+                      onBlur={(e) => setPatientPhoneError(validatePhone(e.target.value) || { message: "Phone number is required", isValid: false })}
+                      className={
+                        patientPhoneError
+                          ? patientPhoneError.isValid
+                            ? "border-green-500 pr-10"
+                            : "border-destructive pr-10"
+                          : ""
+                      }
+                      required
+                      maxLength={20}
+                    />
+                    {patientPhoneError?.isValid && (
+                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                    )}
+                  </div>
+                  {patientPhoneError && !patientPhoneError.isValid && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {patientPhoneError.message}
+                    </p>
+                  )}
+                  {!patientPhoneError && (
+                    <p className="text-xs text-muted-foreground">
+                      Include country code (e.g., +1 for US)
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="patient-password">Password</Label>
-                  <Input
-                    id="patient-password"
-                    type="password"
-                    value={patientPassword}
-                    onChange={(e) => setPatientPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    maxLength={100}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="patient-password"
+                      type="password"
+                      placeholder="Minimum 6 characters"
+                      value={patientPassword}
+                      onChange={(e) => handlePatientPasswordChange(e.target.value)}
+                      onBlur={(e) => setPatientPasswordError(validatePassword(e.target.value) || { message: "Password is required", isValid: false })}
+                      className={
+                        patientPasswordError
+                          ? patientPasswordError.isValid
+                            ? "border-green-500 pr-10"
+                            : "border-destructive pr-10"
+                          : ""
+                      }
+                      required
+                      minLength={6}
+                      maxLength={100}
+                    />
+                    {patientPasswordError?.isValid && (
+                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                    )}
+                  </div>
+                  {patientPasswordError && !patientPasswordError.isValid && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {patientPasswordError.message}
+                    </p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Please wait..." : isSignup ? "Sign Up" : "Sign In"}
