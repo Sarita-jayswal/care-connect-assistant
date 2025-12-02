@@ -107,11 +107,12 @@ export default function AuditLog() {
       setSelectedLogs([]);
       setIsBulkDeleteOpen(false);
       fetchAuditLogs();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting audit logs:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to delete audit logs";
       toast({
-        title: "Error",
-        description: "Failed to delete audit logs",
+        title: "Error Deleting Audit Logs",
+        description: errorMessage,
         variant: "destructive",
       });
     }

@@ -186,11 +186,12 @@ const Tasks = () => {
         title: "Success",
         description: "Task status updated successfully",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating task status:', err);
+      const errorMessage = err?.message || err?.error_description || "Failed to update task status";
       toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to update task status',
+        title: "Error Updating Status",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -216,11 +217,12 @@ const Tasks = () => {
         title: "Success",
         description: "Priority updated successfully",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating priority:', err);
+      const errorMessage = err?.message || err?.error_description || "Failed to update priority";
       toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to update priority',
+        title: "Error Updating Priority",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -249,11 +251,12 @@ const Tasks = () => {
         title: "Success",
         description: "Task deleted successfully",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting task:', err);
+      const errorMessage = err?.message || err?.error_description || "Failed to delete task";
       toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to delete task',
+        title: "Error Deleting Task",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -321,11 +324,12 @@ const Tasks = () => {
 
       setRescheduleDialogOpen(false);
       setTaskToReschedule(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error rescheduling appointment:', err);
+      const errorMessage = err?.message || err?.error_description || "Failed to reschedule appointment";
       toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to reschedule appointment',
+        title: "Error Rescheduling",
+        description: errorMessage,
         variant: "destructive",
       });
     }
