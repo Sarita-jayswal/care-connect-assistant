@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Shield } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Shield, UserCog, Trash2, Edit } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { format } from "date-fns";
 
 const emailSchema = z.string().trim().min(1, "Email is required").email("Invalid email address").max(255, "Email is too long");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters").max(100, "Password is too long");
@@ -17,10 +21,20 @@ interface FieldError {
   isValid: boolean;
 }
 
+interface StaffAccount {
+  id: string;
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  created_at: string;
+}
+
 const Admin = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState(true);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +43,18 @@ const Admin = () => {
   const [emailError, setEmailError] = useState<FieldError | null>(null);
   const [passwordError, setPasswordError] = useState<FieldError | null>(null);
   const [nameError, setNameError] = useState<FieldError | null>(null);
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffAccount | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editNameError, setEditNameError] = useState<FieldError | null>(null);
+  const [editEmailError, setEditEmailError] = useState<FieldError | null>(null);
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingStaff, setDeletingStaff] = useState<StaffAccount | null>(null);
 
   const validateEmail = (value: string): FieldError | null => {
     if (!value.trim()) return null;
@@ -56,6 +82,33 @@ const Admin = () => {
     }
     return { message: "", isValid: true };
   };
+
+  const fetchStaffAccounts = async () => {
+    setLoadingStaff(true);
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("role", "COORDINATOR")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setStaffAccounts(data || []);
+    } catch (error: any) {
+      console.error("Error fetching staff accounts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load staff accounts",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaffAccounts();
+  }, []);
 
   const handleEmailChange = (value: string) => {
     setEmail(value);
@@ -148,12 +201,113 @@ const Admin = () => {
         setEmailError(null);
         setPasswordError(null);
         setNameError(null);
+        
+        // Refresh staff list
+        fetchStaffAccounts();
       }
     } catch (error: any) {
       console.error("Create staff error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create staff account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditStaff = (staff: StaffAccount) => {
+    setEditingStaff(staff);
+    setEditFullName(staff.full_name || "");
+    setEditEmail(staff.email);
+    setEditNameError(null);
+    setEditEmailError(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateStaff = async () => {
+    if (!editingStaff) return;
+
+    const nameValidation = validateName(editFullName);
+    const emailValidation = validateEmail(editEmail);
+
+    setEditNameError(nameValidation);
+    setEditEmailError(emailValidation);
+
+    if (!nameValidation?.isValid || !emailValidation?.isValid) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({
+          full_name: editFullName,
+          email: editEmail,
+        })
+        .eq("id", editingStaff.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Staff Updated",
+        description: "Staff account has been updated successfully",
+      });
+
+      setEditDialogOpen(false);
+      fetchStaffAccounts();
+    } catch (error: any) {
+      console.error("Update staff error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update staff account",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteStaff = (staff: StaffAccount) => {
+    setDeletingStaff(staff);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteStaff = async () => {
+    if (!deletingStaff) return;
+
+    setLoading(true);
+    try {
+      // Delete from user_roles first
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", deletingStaff.user_id);
+
+      if (roleError) throw roleError;
+
+      // Delete from users table
+      const { error: userError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", deletingStaff.id);
+
+      if (userError) throw userError;
+
+      toast({
+        title: "Staff Deleted",
+        description: `${deletingStaff.full_name || deletingStaff.email} has been removed`,
+      });
+
+      setDeleteDialogOpen(false);
+      fetchStaffAccounts();
+    } catch (error: any) {
+      console.error("Delete staff error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete staff account",
         variant: "destructive",
       });
     } finally {
@@ -279,6 +433,148 @@ const Admin = () => {
           </form>
         </CardContent>
       </Card>
+
+      <Card className="medical-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserCog className="h-5 w-5" />
+            Manage Staff Accounts
+          </CardTitle>
+          <CardDescription>
+            View, edit, or deactivate existing staff accounts
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingStaff ? (
+            <div className="text-center py-8 text-muted-foreground">Loading staff accounts...</div>
+          ) : staffAccounts.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No staff accounts found</div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {staffAccounts.map((staff) => (
+                    <TableRow key={staff.id}>
+                      <TableCell className="font-medium">{staff.full_name || "—"}</TableCell>
+                      <TableCell>{staff.email}</TableCell>
+                      <TableCell>{format(new Date(staff.created_at), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditStaff(staff)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteStaff(staff)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Staff Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Staff Account</DialogTitle>
+            <DialogDescription>Update staff member information</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input
+                id="edit-name"
+                value={editFullName}
+                onChange={(e) => {
+                  setEditFullName(e.target.value);
+                  setEditNameError(validateName(e.target.value));
+                }}
+                className={editNameError && !editNameError.isValid ? "border-destructive" : ""}
+              />
+              {editNameError && !editNameError.isValid && (
+                <div className="flex items-center gap-1 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{editNameError.message}</span>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => {
+                  setEditEmail(e.target.value);
+                  setEditEmailError(validateEmail(e.target.value));
+                }}
+                className={editEmailError && !editEmailError.isValid ? "border-destructive" : ""}
+              />
+              {editEmailError && !editEmailError.isValid && (
+                <div className="flex items-center gap-1 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{editEmailError.message}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateStaff}
+              disabled={loading || !editNameError?.isValid || !editEmailError?.isValid}
+            >
+              {loading ? "Updating..." : "Update Staff"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Staff Alert Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Staff Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {deletingStaff?.full_name || deletingStaff?.email}? 
+              This action cannot be undone and will remove their access to the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteStaff}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {loading ? "Deleting..." : "Delete Staff"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
