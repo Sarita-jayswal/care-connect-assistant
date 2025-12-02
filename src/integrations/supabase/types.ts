@@ -423,6 +423,7 @@ export type Database = {
           first_name: string
           last_name: string
           location: string
+          missed_appointment_count: number
           patient_id: string
           patient_phone: string
           priority: string
