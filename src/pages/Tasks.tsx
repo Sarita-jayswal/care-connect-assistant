@@ -285,26 +285,38 @@ const Tasks = () => {
     if (!taskToReschedule?.appointment_id) return;
 
     try {
-      const { error } = await supabase
+      // Update the appointment with new details and set status to SCHEDULED
+      const { error: appointmentError } = await supabase
         .from('appointments')
         .update({
           scheduled_start: toUTCString(rescheduleData.scheduled_start),
           scheduled_end: toUTCString(rescheduleData.scheduled_end),
           provider_name: rescheduleData.provider_name,
           location: rescheduleData.location,
-          status: 'RESCHEDULED',
+          status: 'SCHEDULED',
         })
         .eq('id', taskToReschedule.appointment_id);
 
-      if (error) throw error;
+      if (appointmentError) throw appointmentError;
 
-      // Refresh tasks
+      // Mark the reschedule task as completed
+      const { error: taskError } = await supabase
+        .from('follow_up_tasks')
+        .update({
+          status: 'DONE',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', taskToReschedule.task_id);
+
+      if (taskError) throw taskError;
+
+      // Refresh tasks to show updated data
       const { data } = await supabase.rpc('get_follow_up_tasks');
       if (data) setTasks(data);
 
       toast({
         title: "Success",
-        description: "Appointment rescheduled successfully",
+        description: "Appointment rescheduled and task completed",
       });
 
       setRescheduleDialogOpen(false);
