@@ -20,8 +20,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Phone, User, Calendar, Plus, Pencil } from "lucide-react";
+import { Phone, User, Calendar, Plus, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -57,6 +67,7 @@ const Patients = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deletingPatient, setDeletingPatient] = useState<Patient | null>(null);
 
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
@@ -158,6 +169,34 @@ const Patients = () => {
     }
   };
 
+  const handleDeletePatient = async () => {
+    if (!deletingPatient) return;
+
+    try {
+      const { error } = await supabase
+        .from("patients")
+        .delete()
+        .eq("id", deletingPatient.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Patient deleted successfully",
+      });
+
+      setDeletingPatient(null);
+      fetchPatients();
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete patient",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -253,13 +292,22 @@ const Patients = () => {
                         {new Date(patient.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditPatient(patient)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditPatient(patient)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeletingPatient(patient)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -359,6 +407,23 @@ const Patients = () => {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletingPatient} onOpenChange={(open) => !open && setDeletingPatient(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Patient</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this patient? This will also delete all associated appointments, messages, and tasks. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
