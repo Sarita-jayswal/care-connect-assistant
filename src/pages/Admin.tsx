@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Shield, UserCog, Trash2, Edit } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Shield, UserCog, Trash2, Edit, Users } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { format } from "date-fns";
 
 const emailSchema = z.string().trim().min(1, "Email is required").email("Invalid email address").max(255, "Email is too long");
@@ -35,6 +36,7 @@ const Admin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -317,11 +319,77 @@ const Admin = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3 mb-6">
-        <Shield className="h-8 w-8 text-primary" />
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-          Admin Panel
-        </h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Shield className="h-8 w-8 text-primary" />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Admin Panel
+          </h1>
+        </div>
+        
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Users className="h-4 w-4" />
+              Manage Staff ({staffAccounts.length})
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <UserCog className="h-5 w-5" />
+                Manage Staff Accounts
+              </SheetTitle>
+              <SheetDescription>
+                View, edit, or remove existing staff accounts
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="mt-6">
+              {loadingStaff ? (
+                <div className="text-center py-8 text-muted-foreground">Loading staff accounts...</div>
+              ) : staffAccounts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No staff accounts found</div>
+              ) : (
+                <div className="space-y-4">
+                  {staffAccounts.map((staff) => (
+                    <Card key={staff.id} className="p-4">
+                      <div className="space-y-3">
+                        <div>
+                          <div className="font-semibold text-lg">{staff.full_name || "—"}</div>
+                          <div className="text-sm text-muted-foreground">{staff.email}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Created: {format(new Date(staff.created_at), "MMM d, yyyy")}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditStaff(staff)}
+                            className="flex-1"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteStaff(staff)}
+                            className="flex-1 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <Card className="medical-card max-w-2xl">
@@ -431,66 +499,6 @@ const Admin = () => {
               {loading ? "Creating Account..." : "Create Staff Account"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-
-      <Card className="medical-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCog className="h-5 w-5" />
-            Manage Staff Accounts
-          </CardTitle>
-          <CardDescription>
-            View, edit, or deactivate existing staff accounts
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingStaff ? (
-            <div className="text-center py-8 text-muted-foreground">Loading staff accounts...</div>
-          ) : staffAccounts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No staff accounts found</div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {staffAccounts.map((staff) => (
-                    <TableRow key={staff.id}>
-                      <TableCell className="font-medium">{staff.full_name || "—"}</TableCell>
-                      <TableCell>{staff.email}</TableCell>
-                      <TableCell>{format(new Date(staff.created_at), "MMM d, yyyy")}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditStaff(staff)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteStaff(staff)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
         </CardContent>
       </Card>
 
