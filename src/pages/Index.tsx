@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, ClipboardList, MessageSquare, Users, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const { role } = useAuth();
@@ -165,8 +166,8 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
-                <a
-                  href="/tasks"
+                <Link
+                  to="/tasks"
                   className="p-5 rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:shadow-medium transition-all duration-300 group"
                 >
                   <div className="flex items-center gap-4">
@@ -180,9 +181,9 @@ const Index = () => {
                       </p>
                     </div>
                   </div>
-                </a>
-                <a
-                  href="/appointments"
+                </Link>
+                <Link
+                  to="/appointments"
                   className="p-5 rounded-xl border border-border/50 hover:border-accent/50 hover:bg-accent/5 hover:shadow-medium transition-all duration-300 group"
                 >
                   <div className="flex items-center gap-4">
@@ -196,9 +197,9 @@ const Index = () => {
                       </p>
                     </div>
                   </div>
-                </a>
-                <a
-                  href="/messages"
+                </Link>
+                <Link
+                  to="/messages"
                   className="p-5 rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:shadow-medium transition-all duration-300 group"
                 >
                   <div className="flex items-center gap-4">
@@ -212,9 +213,9 @@ const Index = () => {
                       </p>
                     </div>
                   </div>
-                </a>
-                <a
-                  href="/patients"
+                </Link>
+                <Link
+                  to="/patients"
                   className="p-5 rounded-xl border border-border/50 hover:border-accent/50 hover:bg-accent/5 hover:shadow-medium transition-all duration-300 group"
                 >
                   <div className="flex items-center gap-4">
@@ -228,7 +229,7 @@ const Index = () => {
                       </p>
                     </div>
                   </div>
-                </a>
+                </Link>
               </div>
             </CardContent>
           </Card>

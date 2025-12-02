@@ -51,7 +51,7 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
 
   if (loading) {
     return (
@@ -66,11 +66,11 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
+      <Route path="/auth" element={user ? <Navigate to={role === "admin" ? "/admin" : "/"} replace /> : <Auth />} />
       <Route
         path="/"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["staff"]}>
             <AuthenticatedLayout>
               <Index />
             </AuthenticatedLayout>
