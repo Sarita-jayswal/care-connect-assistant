@@ -695,15 +695,6 @@ const Auth = () => {
             </TabsContent>
           </Tabs>
           
-          <div className="mt-4 pt-4 border-t">
-            <p className="text-sm text-muted-foreground text-center mb-3">
-              <strong>Patients:</strong> You will receive an account invitation via SMS from your healthcare provider.
-            </p>
-            <p className="text-xs text-muted-foreground text-center">
-              Use the activation link in the SMS to create your account and access the patient portal.
-            </p>
-          </div>
-          
           <div className="mt-4 text-center text-sm">
             <button
               type="button"
