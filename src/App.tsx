@@ -12,6 +12,7 @@ import Tasks from "./pages/Tasks";
 import Appointments from "./pages/Appointments";
 import Messages from "./pages/Messages";
 import Patients from "./pages/Patients";
+import AuditLog from "./pages/AuditLog";
 import MyAppointments from "./pages/MyAppointments";
 import MyMessages from "./pages/MyMessages";
 import Auth from "./pages/Auth";
@@ -125,6 +126,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["staff"]}>
             <AuthenticatedLayout>
               <CreatePatient />
+            </AuthenticatedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audit-log"
+        element={
+          <ProtectedRoute allowedRoles={["staff"]}>
+            <AuthenticatedLayout>
+              <AuditLog />
             </AuthenticatedLayout>
           </ProtectedRoute>
         }
