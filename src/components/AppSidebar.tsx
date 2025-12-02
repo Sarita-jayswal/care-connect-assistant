@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const staffItems = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -110,10 +111,18 @@ export function AppSidebar() {
                 </AvatarFallback>
               </Avatar>
               {open && (
-                <div className="flex flex-col flex-1 min-w-0">
-                  <span className="text-sm font-medium truncate">
-                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || role === "admin" ? "Admin" : "Staff"}
-                  </span>
+                <div className="flex flex-col flex-1 min-w-0 gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">
+                      {user?.user_metadata?.full_name || user?.email?.split('@')[0] || (role === "admin" ? "Admin" : "Staff")}
+                    </span>
+                    <Badge 
+                      variant={role === "admin" ? "default" : "secondary"}
+                      className="text-[10px] px-1.5 py-0 h-4"
+                    >
+                      {role === "admin" ? "Admin" : "Staff"}
+                    </Badge>
+                  </div>
                   <span className="text-xs text-muted-foreground truncate">
                     {user?.email}
                   </span>
