@@ -96,10 +96,15 @@ const Messages = () => {
   }, {} as Record<string, Message[]>);
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Messages</h1>
-        <p className="text-muted-foreground">SMS conversations with patients</p>
+    <div className="p-8 space-y-6 animate-fade-in">
+      <div className="relative">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-4xl font-outfit font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Messages
+          </h1>
+          <p className="text-muted-foreground text-lg">SMS conversations with patients</p>
+        </div>
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-accent/5 rounded-full blur-2xl"></div>
       </div>
 
       <div className="grid gap-6">
@@ -108,24 +113,26 @@ const Messages = () => {
           const patient = latestMsg.patients;
 
           return (
-            <Card key={phone}>
+            <Card key={phone} className="medical-card hover:shadow-strong transition-all duration-300">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" />
+                    <CardTitle className="text-xl font-outfit flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <MessageSquare className="h-5 w-5 text-primary" />
+                      </div>
                       {patient ? (
                         `${patient.first_name} ${patient.last_name}`
                       ) : (
                         "Unknown Patient"
                       )}
                     </CardTitle>
-                    <CardDescription className="flex items-center gap-2 mt-1">
+                    <CardDescription className="flex items-center gap-2 mt-2">
                       <Phone className="h-3 w-3" />
                       {phone}
                     </CardDescription>
                   </div>
-                  <Badge variant="outline">{msgs.length} messages</Badge>
+                  <Badge variant="outline" className="text-sm shadow-soft">{msgs.length} messages</Badge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -172,9 +179,14 @@ const Messages = () => {
         })}
 
         {Object.keys(messagesByPhone).length === 0 && (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              No messages found
+          <Card className="medical-card">
+            <CardContent className="py-16 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="p-4 rounded-full bg-muted">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground text-lg">No messages found</p>
+              </div>
             </CardContent>
           </Card>
         )}

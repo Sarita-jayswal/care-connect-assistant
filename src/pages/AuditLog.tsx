@@ -136,18 +136,24 @@ export default function AuditLog() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Audit Log</h1>
-          <p className="text-muted-foreground mt-1">
-            System activity and event tracking
-          </p>
+    <div className="container mx-auto p-6 space-y-6 animate-fade-in">
+      <div className="flex justify-between items-start">
+        <div className="relative flex-1">
+          <div className="flex flex-col space-y-2">
+            <h1 className="text-4xl font-outfit font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Audit Log
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              System activity and event tracking
+            </p>
+          </div>
+          <div className="absolute -top-4 -left-4 w-24 h-24 bg-accent/5 rounded-full blur-2xl"></div>
         </div>
         {selectedLogs.length > 0 && (
           <Button
             variant="destructive"
             onClick={() => setIsBulkDeleteOpen(true)}
+            className="shadow-soft"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete Selected ({selectedLogs.length})
@@ -155,7 +161,7 @@ export default function AuditLog() {
         )}
       </div>
 
-      <Card>
+      <Card className="medical-card">
         <ScrollArea className="h-[calc(100vh-16rem)]">
           <Table>
             <TableHeader>

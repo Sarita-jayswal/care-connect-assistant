@@ -151,19 +151,26 @@ const CreatePatient = () => {
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Create Patient</h1>
-        <p className="text-muted-foreground">Add a new patient to the system</p>
+    <div className="p-8 max-w-2xl mx-auto space-y-6 animate-fade-in">
+      <div className="relative">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-4xl font-outfit font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Create Patient
+          </h1>
+          <p className="text-muted-foreground text-lg">Add a new patient to the telehealth system</p>
+        </div>
+        <div className="absolute -top-4 -left-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
       </div>
 
-      <Card>
+      <Card className="medical-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
+          <CardTitle className="text-2xl font-outfit flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <UserPlus className="h-5 w-5 text-primary" />
+            </div>
             Patient Information
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-base">
             Enter the patient's details. They will receive appointment reminders via SMS.
           </CardDescription>
         </CardHeader>
@@ -244,11 +251,11 @@ const CreatePatient = () => {
               </p>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-6">
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1"
+                className="flex-1 medical-gradient-bg hover:opacity-90 transition-opacity shadow-soft"
               >
                 {loading ? (
                   <>
@@ -266,6 +273,7 @@ const CreatePatient = () => {
                 type="button"
                 variant="outline"
                 onClick={() => navigate('/patients')}
+                className="shadow-soft"
               >
                 Cancel
               </Button>

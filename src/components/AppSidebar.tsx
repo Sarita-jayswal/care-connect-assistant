@@ -41,7 +41,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Healthcare Staff</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-outfit font-semibold">TeleHealth</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {staffItems.map((item) => (
@@ -50,7 +50,7 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
-                      className="hover:bg-sidebar-accent"
+                      className="hover:bg-sidebar-accent rounded-lg transition-colors"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
                       <item.icon className="h-4 w-4" />
