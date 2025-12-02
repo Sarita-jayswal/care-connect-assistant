@@ -19,6 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface TaskData {
@@ -47,6 +59,8 @@ const Tasks = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "open" | "completed">("open");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -170,6 +184,42 @@ const Tasks = () => {
     }
   };
 
+  const handleDeleteClick = (taskId: string) => {
+    setTaskToDelete(taskId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!taskToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('follow_up_tasks')
+        .delete()
+        .eq('id', taskToDelete);
+
+      if (error) throw error;
+
+      // Update local state
+      setTasks(tasks.filter(task => task.task_id !== taskToDelete));
+
+      toast({
+        title: "Success",
+        description: "Task deleted successfully",
+      });
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : 'Failed to delete task',
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setTaskToDelete(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -231,12 +281,13 @@ const Tasks = () => {
               <TableHead>Priority</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead>Completed At</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredTasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                   No tasks found
                 </TableCell>
               </TableRow>
@@ -306,12 +357,42 @@ const Tasks = () => {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteClick(task.task_id)}
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
