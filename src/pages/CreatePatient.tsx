@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, Send } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface PatientForm {
@@ -58,25 +58,24 @@ const CreatePatient = () => {
         return;
       }
 
-      // Call edge function to create patient and invitation
-      const { data, error } = await supabase.functions.invoke('patient-invitation', {
-        body: {
-          first_name: form.first_name,
-          last_name: form.last_name,
-          phone: form.phone,
-          date_of_birth: form.date_of_birth,
-          external_id: form.external_id,
-        },
-        method: 'POST',
-      });
+      // Create patient directly in Supabase
+      const { data, error } = await supabase
+        .from("patients")
+        .insert([
+          {
+            first_name: form.first_name,
+            last_name: form.last_name,
+            phone: form.phone,
+            date_of_birth: form.date_of_birth,
+            external_id: form.external_id,
+          }
+        ])
+        .select()
+        .single();
 
       if (error) {
         console.error('Error creating patient:', error);
         throw error;
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create patient');
       }
 
       toast({
@@ -84,28 +83,16 @@ const CreatePatient = () => {
         description: `${form.first_name} ${form.last_name} has been registered successfully.`,
       });
 
-      // Show invitation details
-      toast({
-        title: "Invitation Generated",
-        description: "Now send the SMS invitation to the patient.",
-        duration: 5000,
-      });
-
-      // TODO: Trigger n8n workflow to send SMS
-      // For now, just show the activation URL
-      console.log('Activation URL:', data.invitation.activation_url);
-      console.log('Send SMS to:', form.phone);
-
       // Navigate back to patients list
       setTimeout(() => {
         navigate('/patients');
-      }, 2000);
+      }, 1000);
 
     } catch (error: any) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create patient account",
+        description: error.message || "Failed to create patient",
         variant: "destructive",
       });
     } finally {
@@ -116,8 +103,8 @@ const CreatePatient = () => {
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Create Patient Account</h1>
-        <p className="text-muted-foreground">Register a new patient and send them an account invitation</p>
+        <h1 className="text-3xl font-bold">Create Patient</h1>
+        <p className="text-muted-foreground">Add a new patient to the system</p>
       </div>
 
       <Card>
@@ -127,7 +114,7 @@ const CreatePatient = () => {
             Patient Information
           </CardTitle>
           <CardDescription>
-            Enter the patient's details. They will receive an SMS to activate their account.
+            Enter the patient's details. They will receive appointment reminders via SMS.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -204,8 +191,8 @@ const CreatePatient = () => {
                   </>
                 ) : (
                   <>
-                    <Send className="mr-2 h-4 w-4" />
-                    Create & Send Invitation
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create Patient
                   </>
                 )}
               </Button>
