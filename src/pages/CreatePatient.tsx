@@ -37,25 +37,31 @@ const CreatePatient = () => {
   const generateNextExternalId = async () => {
     setGeneratingId(true);
     try {
-      // Get the latest patient with external_id starting with "PAT-"
+      // Get all patients with external_id starting with "PAT-"
       const { data, error } = await supabase
         .from("patients")
         .select("external_id")
-        .like("external_id", "PAT-%")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .like("external_id", "PAT-%");
 
       if (error) throw error;
 
-      let nextNumber = 1;
+      let maxNumber = 0;
+      
+      // Find the highest number from all PAT-XXXX IDs
       if (data && data.length > 0) {
-        // Extract number from last external_id (e.g., "PAT-0042" -> 42)
-        const lastId = data[0].external_id;
-        const match = lastId?.match(/PAT-(\d+)/);
-        if (match) {
-          nextNumber = parseInt(match[1], 10) + 1;
-        }
+        data.forEach(patient => {
+          const match = patient.external_id?.match(/PAT-(\d+)/);
+          if (match) {
+            const num = parseInt(match[1], 10);
+            if (num > maxNumber) {
+              maxNumber = num;
+            }
+          }
+        });
       }
+
+      // Next number is max + 1
+      const nextNumber = maxNumber + 1;
 
       // Format with leading zeros (e.g., PAT-0001)
       const newExternalId = `PAT-${nextNumber.toString().padStart(4, '0')}`;
