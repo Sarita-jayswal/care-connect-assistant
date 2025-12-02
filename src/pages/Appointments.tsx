@@ -560,13 +560,15 @@ const Appointments = () => {
                   <TableHead>Provider</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>24h Reminder</TableHead>
+                  <TableHead>2h Reminder</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAppointments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                       {hasActiveFilters ? "No appointments match the current filters" : "No appointments found"}
                     </TableCell>
                   </TableRow>
@@ -623,6 +625,30 @@ const Appointments = () => {
                         <Badge variant={getStatusVariant(appointment.status)}>
                           {appointment.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {appointment.reminder_24h_sent_at ? (
+                          <div className="text-xs">
+                            <div className="font-medium text-green-600">Sent</div>
+                            <div className="text-muted-foreground">
+                              {format(new Date(appointment.reminder_24h_sent_at), "MMM dd, HH:mm")}
+                            </div>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Not sent</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {appointment.reminder_2h_sent_at ? (
+                          <div className="text-xs">
+                            <div className="font-medium text-green-600">Sent</div>
+                            <div className="text-muted-foreground">
+                              {format(new Date(appointment.reminder_2h_sent_at), "MMM dd, HH:mm")}
+                            </div>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Not sent</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
