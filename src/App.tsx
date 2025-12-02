@@ -15,7 +15,6 @@ import Patients from "./pages/Patients";
 import AuditLog from "./pages/AuditLog";
 import Auth from "./pages/Auth";
 import CreatePatient from "./pages/CreatePatient";
-import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -51,7 +50,7 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => {
-  const { user, loading, role } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -66,11 +65,11 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/auth" element={user ? <Navigate to={role === "admin" ? "/admin" : "/"} replace /> : <Auth />} />
+      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
       <Route
         path="/"
         element={
-          <ProtectedRoute allowedRoles={["staff"]}>
+          <ProtectedRoute>
             <AuthenticatedLayout>
               <Index />
             </AuthenticatedLayout>
@@ -133,16 +132,6 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["staff"]}>
             <AuthenticatedLayout>
               <AuditLog />
-            </AuthenticatedLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <AuthenticatedLayout>
-              <Admin />
             </AuthenticatedLayout>
           </ProtectedRoute>
         }

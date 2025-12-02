@@ -140,12 +140,14 @@ const Auth = () => {
     // Validate all fields before submission
     const emailValidation = validateEmail(staffEmail);
     const passwordValidation = validatePassword(staffPassword);
+    const nameValidation = isSignup ? validateName(signupName) : null;
 
     setStaffEmailError(emailValidation);
     setStaffPasswordError(passwordValidation);
+    if (isSignup) setSignupNameError(nameValidation);
 
     // Check for validation errors
-    if (!emailValidation?.isValid || !passwordValidation?.isValid) {
+    if (!emailValidation?.isValid || !passwordValidation?.isValid || (isSignup && !nameValidation?.isValid)) {
       toast({
         title: "Validation Error",
         description: "Please fix the errors in the form before submitting.",
@@ -160,19 +162,78 @@ const Auth = () => {
       // Final validation with zod
       emailSchema.parse(staffEmail);
       passwordSchema.parse(staffPassword);
+      if (isSignup) {
+        nameSchema.parse(signupName);
+      }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email: staffEmail,
-        password: staffPassword,
-      });
+      if (isSignup) {
+        const { data, error } = await supabase.auth.signUp({
+          email: staffEmail,
+          password: staffPassword,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              role: "staff",
+              full_name: signupName,
+            },
+          },
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Welcome back!",
-        description: "Successfully logged in.",
-      });
-      navigate("/tasks");
+        if (data.user) {
+          // Create entry in users table
+          const { error: insertError } = await supabase.from("users").insert({
+            user_id: data.user.id,
+            email: staffEmail,
+            full_name: signupName,
+            role: "COORDINATOR",
+          });
+
+          if (insertError) {
+            console.error("Error creating user record:", insertError);
+          }
+
+          // Create staff role entry
+          const { error: roleError } = await supabase.from("user_roles").insert({
+            user_id: data.user.id,
+            role: "staff",
+          });
+
+          if (roleError) {
+            console.error("Error creating user role:", roleError);
+          }
+
+          // Show email verification screen
+          setVerificationEmail(staffEmail);
+          setShowEmailVerification(true);
+          setCanResendEmail(false);
+          setResendTimer(10);
+          
+          toast({
+            title: "Account created!",
+            description: "Please check your email to verify your account.",
+          });
+          
+          // Clear form
+          setStaffEmail("");
+          setStaffPassword("");
+          setSignupName("");
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: staffEmail,
+          password: staffPassword,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Welcome back!",
+          description: "Successfully logged in as staff.",
+        });
+        navigate("/tasks");
+      }
     } catch (error: any) {
       console.error("Auth error:", error);
       toast({
@@ -524,24 +585,56 @@ const Auth = () => {
             CareFollow Portal
           </CardTitle>
           <CardDescription className="text-center text-base">
-            Welcome back to your healthcare portal
+            {isSignup ? "Create your healthcare account" : "Welcome back to your healthcare portal"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="staff" className="w-full">
             <TabsList className="grid w-full grid-cols-1 mb-6">
-              <TabsTrigger value="staff">Staff/Admin Login</TabsTrigger>
+              <TabsTrigger value="staff">Healthcare Staff Login</TabsTrigger>
             </TabsList>
             
             <TabsContent value="staff">
               <form onSubmit={handleStaffAuth} className="space-y-4">
+                {isSignup && (
+                  <div className="space-y-2">
+                    <Label htmlFor="staff-name">Full Name</Label>
+                    <div className="relative">
+                      <Input
+                        id="staff-name"
+                        placeholder="John Doe"
+                        value={signupName}
+                        onChange={(e) => handleSignupNameChange(e.target.value)}
+                        onBlur={(e) => setSignupNameError(validateName(e.target.value) || { message: "Name is required", isValid: false })}
+                        className={
+                          signupNameError
+                            ? signupNameError.isValid
+                              ? "border-green-500 pr-10"
+                              : "border-destructive pr-10"
+                            : ""
+                        }
+                        required
+                        maxLength={100}
+                      />
+                      {signupNameError?.isValid && (
+                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                    {signupNameError && !signupNameError.isValid && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {signupNameError.message}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="staff-email">Email</Label>
                   <div className="relative">
                     <Input
                       id="staff-email"
                       type="email"
-                      placeholder="staff@carefollow.com"
+                      placeholder="staff@hospital.com"
                       value={staffEmail}
                       onChange={(e) => handleStaffEmailChange(e.target.value)}
                       onBlur={(e) => setStaffEmailError(validateEmail(e.target.value) || { message: "Email is required", isValid: false })}
@@ -572,7 +665,7 @@ const Auth = () => {
                     <Input
                       id="staff-password"
                       type={showStaffPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder="Minimum 6 characters"
                       value={staffPassword}
                       onChange={(e) => handleStaffPasswordChange(e.target.value)}
                       onBlur={(e) => setStaffPasswordError(validatePassword(e.target.value) || { message: "Password is required", isValid: false })}
@@ -610,12 +703,22 @@ const Auth = () => {
                     </p>
                   )}
                 </div>
-                <Button type="submit" className="w-full medical-gradient" disabled={loading}>
-                  {loading ? "Signing In..." : "Sign In"}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Please wait..." : isSignup ? "Sign Up" : "Sign In"}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
+          
+          <div className="mt-4 text-center text-sm">
+            <button
+              type="button"
+              onClick={() => setIsSignup(!isSignup)}
+              className="text-primary hover:underline"
+            >
+              {isSignup ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
