@@ -243,17 +243,17 @@ const Tasks = () => {
             ) : (
               filteredTasks.map((task) => (
                 <TableRow key={task.task_id}>
-                  <TableCell className="font-medium">{task.task_type}</TableCell>
-                  <TableCell className="max-w-xs">
+                  <TableCell className="font-medium whitespace-nowrap">{task.task_type}</TableCell>
+                  <TableCell className="min-w-[300px] max-w-md">
                     {task.description ? (
-                      <span className="text-sm text-muted-foreground line-clamp-2">
+                      <span className="text-sm text-muted-foreground">
                         {task.description}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {task.first_name} {task.last_name}
                   </TableCell>
                   <TableCell>{task.patient_phone}</TableCell>
