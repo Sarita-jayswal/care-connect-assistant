@@ -4,6 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { format } from "date-fns";
 
+// Helper functions to convert between datetime-local format and UTC
+const toDatetimeLocalString = (utcTimestamp: string): string => {
+  const date = new Date(utcTimestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const toUTCString = (datetimeLocalString: string): string => {
+  // Parse the datetime-local string as local time and convert to UTC
+  const localDate = new Date(datetimeLocalString);
+  return localDate.toISOString();
+};
+
 type Patient = Database["public"]["Tables"]["patients"]["Row"];
 import {
   Table,
@@ -191,9 +208,9 @@ const Appointments = () => {
   const handleEditAppointment = (appointment: Appointment) => {
     setEditingAppointment(appointment);
     form.reset({
-      scheduled_start: new Date(appointment.scheduled_start).toISOString().slice(0, 16),
+      scheduled_start: toDatetimeLocalString(appointment.scheduled_start),
       scheduled_end: appointment.scheduled_end 
-        ? new Date(appointment.scheduled_end).toISOString().slice(0, 16) 
+        ? toDatetimeLocalString(appointment.scheduled_end)
         : "",
       provider_name: appointment.provider_name || "",
       location: appointment.location || "",
@@ -209,8 +226,8 @@ const Appointments = () => {
       const { error } = await supabase
         .from("appointments")
         .update({
-          scheduled_start: data.scheduled_start,
-          scheduled_end: data.scheduled_end || null,
+          scheduled_start: toUTCString(data.scheduled_start),
+          scheduled_end: data.scheduled_end ? toUTCString(data.scheduled_end) : null,
           provider_name: data.provider_name || null,
           location: data.location || null,
           status: data.status,
@@ -242,8 +259,8 @@ const Appointments = () => {
         .from("appointments")
         .insert({
           patient_id: data.patient_id,
-          scheduled_start: data.scheduled_start,
-          scheduled_end: data.scheduled_end,
+          scheduled_start: toUTCString(data.scheduled_start),
+          scheduled_end: toUTCString(data.scheduled_end),
           provider_name: data.provider_name,
           location: data.location,
           status: data.status,
