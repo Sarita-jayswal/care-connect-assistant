@@ -25,6 +25,10 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {
+    // Redirect admins to admin panel if they try to access staff pages
+    if (role === "admin") {
+      return <Navigate to="/admin" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 
