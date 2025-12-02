@@ -178,14 +178,12 @@ const Admin = () => {
 
         if (insertError) {
           console.error("Error creating user record:", insertError);
-          throw new Error("Failed to create user record");
+          throw new Error(`Failed to create user record: ${insertError.message}`);
         }
-
-        // Role is automatically assigned by database trigger, no need to insert manually
 
         toast({
           title: "Staff Account Created",
-          description: `${fullName} can now log in with email: ${email}`,
+          description: `${fullName} can now log in with email: ${email}. They will receive a verification email.`,
         });
 
         // Clear form
