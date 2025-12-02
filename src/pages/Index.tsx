@@ -163,7 +163,7 @@ const Index = () => {
                 </div>
                 Quick Access
               </CardTitle>
-              <CardDescription className="text-base">Jump to key sections of the telehealth assistant</CardDescription>
+              <CardDescription className="text-base">Jump to key sections of the CareFollow assistant</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">

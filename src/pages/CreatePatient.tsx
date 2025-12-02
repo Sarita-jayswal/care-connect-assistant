@@ -157,7 +157,7 @@ const CreatePatient = () => {
           <h1 className="text-4xl font-outfit font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Create Patient
           </h1>
-          <p className="text-muted-foreground text-lg">Add a new patient to the telehealth system</p>
+          <p className="text-muted-foreground text-lg">Add a new patient to the CareFollow system</p>
         </div>
         <div className="absolute -top-4 -left-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
       </div>

@@ -1,6 +1,7 @@
 import { Home, ClipboardList, Calendar, MessageSquare, Users, FileText, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import carefollowLogo from "@/assets/carefollow-logo.png";
 
 import {
   Sidebar,
@@ -41,7 +42,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-outfit font-semibold">TeleHealth</SidebarGroupLabel>
+          <div className="px-4 py-4 flex items-center gap-3">
+            <img src={carefollowLogo} alt="CareFollow" className="h-8 w-8" />
+            {open && <span className="text-primary font-outfit font-semibold text-lg">CareFollow</span>}
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
               {staffItems.map((item) => (
