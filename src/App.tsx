@@ -13,11 +13,8 @@ import Appointments from "./pages/Appointments";
 import Messages from "./pages/Messages";
 import Patients from "./pages/Patients";
 import AuditLog from "./pages/AuditLog";
-import MyAppointments from "./pages/MyAppointments";
-import MyMessages from "./pages/MyMessages";
 import Auth from "./pages/Auth";
 import CreatePatient from "./pages/CreatePatient";
-import ActivateAccount from "./pages/ActivateAccount";
 import NotFound from "./pages/NotFound";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -69,7 +66,6 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
-      <Route path="/activate" element={<ActivateAccount />} />
       <Route
         path="/"
         element={
@@ -136,26 +132,6 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["staff"]}>
             <AuthenticatedLayout>
               <AuditLog />
-            </AuthenticatedLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my-appointments"
-        element={
-          <ProtectedRoute allowedRoles={["patient"]}>
-            <AuthenticatedLayout>
-              <MyAppointments />
-            </AuthenticatedLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my-messages"
-        element={
-          <ProtectedRoute allowedRoles={["patient"]}>
-            <AuthenticatedLayout>
-              <MyMessages />
             </AuthenticatedLayout>
           </ProtectedRoute>
         }

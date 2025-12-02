@@ -26,17 +26,9 @@ const staffItems = [
   { title: "Audit Log", url: "/audit-log", icon: FileText },
 ];
 
-const patientItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "My Appointments", url: "/my-appointments", icon: Calendar },
-  { title: "My Messages", url: "/my-messages", icon: MessageSquare },
-];
-
 export function AppSidebar() {
   const { open } = useSidebar();
   const { role, user, signOut } = useAuth();
-  
-  const items = role === "staff" ? staffItems : patientItems;
   
   const getInitials = () => {
     if (user?.email) {
@@ -49,12 +41,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>
-            {role === "staff" ? "Healthcare Staff" : "Patient Portal"}
-          </SidebarGroupLabel>
+          <SidebarGroupLabel>Healthcare Staff</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {staffItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
