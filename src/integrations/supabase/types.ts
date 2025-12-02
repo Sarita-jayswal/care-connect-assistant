@@ -419,6 +419,7 @@ export type Database = {
           appointment_id: string
           appointment_status: string
           completed_at: string
+          description: string
           first_name: string
           last_name: string
           location: string
