@@ -1,4 +1,4 @@
-import { Home, ClipboardList, Calendar, MessageSquare, Users, FileText, LogOut } from "lucide-react";
+import { Home, ClipboardList, Calendar, MessageSquare, Users, FileText, LogOut, Shield } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import carefollowLogo from "@/assets/carefollow-logo.png";
@@ -25,6 +25,10 @@ const staffItems = [
   { title: "Messages", url: "/messages", icon: MessageSquare },
   { title: "Patients", url: "/patients", icon: Users },
   { title: "Audit Log", url: "/audit-log", icon: FileText },
+];
+
+const adminItems = [
+  { title: "Admin Panel", url: "/admin", icon: Shield },
 ];
 
 export function AppSidebar() {
@@ -66,6 +70,30 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        {role === "admin" && (
+          <SidebarGroup>
+            {open && <SidebarGroupLabel>Administration</SidebarGroupLabel>}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url}
+                        className="hover:bg-sidebar-accent rounded-lg transition-colors"
+                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {open && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       
       {role === "staff" && (

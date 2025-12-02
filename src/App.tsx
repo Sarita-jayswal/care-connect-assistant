@@ -15,6 +15,7 @@ import Patients from "./pages/Patients";
 import AuditLog from "./pages/AuditLog";
 import Auth from "./pages/Auth";
 import CreatePatient from "./pages/CreatePatient";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -132,6 +133,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["staff"]}>
             <AuthenticatedLayout>
               <AuditLog />
+            </AuthenticatedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AuthenticatedLayout>
+              <Admin />
             </AuthenticatedLayout>
           </ProtectedRoute>
         }
