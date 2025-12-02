@@ -181,33 +181,24 @@ const Admin = () => {
           throw new Error("Failed to create user record");
         }
 
-        // Create staff role entry
-        const { error: roleError } = await supabase.from("user_roles").insert({
-          user_id: data.user.id,
-          role: "staff",
+        // Role is automatically assigned by database trigger, no need to insert manually
+
+        toast({
+          title: "Staff Account Created",
+          description: `${fullName} can now log in with email: ${email}`,
         });
 
-        if (roleError) {
-          console.error("Error creating user role:", roleError);
-          throw new Error("Failed to assign role");
-        }
-
-      toast({
-        title: "Staff Account Created",
-        description: `${fullName} can now log in with email: ${email}`,
-      });
-
-      // Clear form
-      setEmail("");
-      setPassword("");
-      setFullName("");
-      setEmailError(null);
-      setPasswordError(null);
-      setNameError(null);
-      
-      // Close dialog and refresh staff list
-      setCreateDialogOpen(false);
-      fetchStaffAccounts();
+        // Clear form
+        setEmail("");
+        setPassword("");
+        setFullName("");
+        setEmailError(null);
+        setPasswordError(null);
+        setNameError(null);
+        
+        // Close dialog and refresh staff list
+        setCreateDialogOpen(false);
+        fetchStaffAccounts();
       }
     } catch (error: any) {
       console.error("Create staff error:", error);
