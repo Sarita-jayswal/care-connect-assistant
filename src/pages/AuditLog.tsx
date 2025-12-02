@@ -13,6 +13,20 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type AuditLog = {
   id: string;
@@ -25,8 +39,11 @@ type AuditLog = {
 };
 
 export default function AuditLog() {
+  const { toast } = useToast();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedLogs, setSelectedLogs] = useState<string[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
   useEffect(() => {
     fetchAuditLogs();
@@ -57,6 +74,49 @@ export default function AuditLog() {
     return "outline";
   };
 
+  const toggleSelectAll = () => {
+    if (selectedLogs.length === logs.length) {
+      setSelectedLogs([]);
+    } else {
+      setSelectedLogs(logs.map((log) => log.id));
+    }
+  };
+
+  const toggleSelectLog = (id: string) => {
+    setSelectedLogs((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedLogs.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from("audit_log")
+        .delete()
+        .in("id", selectedLogs);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${selectedLogs.length} audit log(s) deleted successfully`,
+      });
+
+      setSelectedLogs([]);
+      setIsBulkDeleteOpen(false);
+      fetchAuditLogs();
+    } catch (error) {
+      console.error("Error deleting audit logs:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete audit logs",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -77,11 +137,22 @@ export default function AuditLog() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Audit Log</h1>
-        <p className="text-muted-foreground mt-1">
-          System activity and event tracking
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Audit Log</h1>
+          <p className="text-muted-foreground mt-1">
+            System activity and event tracking
+          </p>
+        </div>
+        {selectedLogs.length > 0 && (
+          <Button
+            variant="destructive"
+            onClick={() => setIsBulkDeleteOpen(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Selected ({selectedLogs.length})
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -89,6 +160,12 @@ export default function AuditLog() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedLogs.length === logs.length && logs.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Timestamp</TableHead>
                 <TableHead>Event Type</TableHead>
                 <TableHead>Created By</TableHead>
@@ -100,13 +177,19 @@ export default function AuditLog() {
             <TableBody>
               {logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     No audit logs found
                   </TableCell>
                 </TableRow>
               ) : (
                 logs.map((log) => (
                   <TableRow key={log.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedLogs.includes(log.id)}
+                        onCheckedChange={() => toggleSelectLog(log.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono text-sm">
                       {format(new Date(log.created_at), "MMM dd, yyyy HH:mm:ss")}
                     </TableCell>
@@ -155,6 +238,26 @@ export default function AuditLog() {
           </Table>
         </ScrollArea>
       </Card>
+
+      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Audit Logs</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedLogs.length} audit log(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete {selectedLogs.length} Log(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
