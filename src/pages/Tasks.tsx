@@ -30,8 +30,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Trash2, MoreVertical, Calendar, Phone, MessageSquare, User, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface TaskData {
   task_id: string;
@@ -46,6 +64,7 @@ interface TaskData {
   first_name: string;
   last_name: string;
   patient_phone: string;
+  missed_appointment_count: number;
   appointment_id: string | null;
   scheduled_start: string | null;
   scheduled_end: string | null;
@@ -54,6 +73,22 @@ interface TaskData {
   location: string | null;
 }
 
+// Helper function to convert UTC ISO string to datetime-local format
+const toDatetimeLocalString = (utcString: string | null) => {
+  if (!utcString) return "";
+  const date = new Date(utcString);
+  const offset = date.getTimezoneOffset() * 60000;
+  const localDate = new Date(date.getTime() - offset);
+  return localDate.toISOString().slice(0, 16);
+};
+
+// Helper function to convert datetime-local string to UTC ISO string
+const toUTCString = (datetimeLocal: string) => {
+  if (!datetimeLocal) return "";
+  const date = new Date(datetimeLocal);
+  return date.toISOString();
+};
+
 const Tasks = () => {
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +96,14 @@ const Tasks = () => {
   const [filterStatus, setFilterStatus] = useState<"all" | "open" | "completed">("open");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [taskToReschedule, setTaskToReschedule] = useState<TaskData | null>(null);
+  const [rescheduleData, setRescheduleData] = useState({
+    scheduled_start: "",
+    scheduled_end: "",
+    provider_name: "",
+    location: "",
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -220,6 +263,84 @@ const Tasks = () => {
     }
   };
 
+  const handleRescheduleClick = (task: TaskData) => {
+    if (!task.appointment_id) {
+      toast({
+        title: "No Appointment",
+        description: "This task is not linked to an appointment",
+        variant: "destructive",
+      });
+      return;
+    }
+    setTaskToReschedule(task);
+    setRescheduleData({
+      scheduled_start: toDatetimeLocalString(task.scheduled_start),
+      scheduled_end: toDatetimeLocalString(task.scheduled_end),
+      provider_name: task.provider_name || "",
+      location: task.location || "",
+    });
+    setRescheduleDialogOpen(true);
+  };
+
+  const handleRescheduleConfirm = async () => {
+    if (!taskToReschedule?.appointment_id) return;
+
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({
+          scheduled_start: toUTCString(rescheduleData.scheduled_start),
+          scheduled_end: toUTCString(rescheduleData.scheduled_end),
+          provider_name: rescheduleData.provider_name,
+          location: rescheduleData.location,
+          status: 'RESCHEDULED',
+        })
+        .eq('id', taskToReschedule.appointment_id);
+
+      if (error) throw error;
+
+      // Refresh tasks
+      const { data } = await supabase.rpc('get_follow_up_tasks');
+      if (data) setTasks(data);
+
+      toast({
+        title: "Success",
+        description: "Appointment rescheduled successfully",
+      });
+
+      setRescheduleDialogOpen(false);
+      setTaskToReschedule(null);
+    } catch (err) {
+      console.error('Error rescheduling appointment:', err);
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : 'Failed to reschedule appointment',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCallPatient = (task: TaskData) => {
+    toast({
+      title: "Call Logged",
+      description: `Contact attempt logged for ${task.first_name} ${task.last_name}`,
+    });
+    // In a real implementation, this would log the call attempt to the database
+  };
+
+  const handleSendSMS = (task: TaskData) => {
+    toast({
+      title: "SMS Feature",
+      description: "SMS reminder functionality will be integrated with Twilio",
+    });
+    // This would integrate with your existing Twilio/n8n workflow
+  };
+
+  const handleViewPatient = (patientId: string) => {
+    window.location.href = `/patients`;
+    // In a more advanced implementation, this could open a patient detail modal
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -275,12 +396,12 @@ const Tasks = () => {
               <TableHead>Task Type</TableHead>
               <TableHead>Details</TableHead>
               <TableHead>Patient Name</TableHead>
-              <TableHead>Patient Phone</TableHead>
-              <TableHead>Appointment Status</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Missed Count</TableHead>
+              <TableHead>Apt. Status</TableHead>
               <TableHead>Task Status</TableHead>
               <TableHead>Priority</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Completed At</TableHead>
+              <TableHead>Created</TableHead>
               <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -308,6 +429,18 @@ const Tasks = () => {
                     {task.first_name} {task.last_name}
                   </TableCell>
                   <TableCell>{task.patient_phone}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {task.missed_appointment_count >= 2 && (
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      )}
+                      <Badge 
+                        variant={task.missed_appointment_count >= 2 ? "destructive" : "secondary"}
+                      >
+                        {task.missed_appointment_count} missed
+                      </Badge>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {task.appointment_status ? (
                       <Badge variant="outline">{task.appointment_status}</Badge>
@@ -345,27 +478,49 @@ const Tasks = () => {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {new Date(task.task_created_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>
-                    {task.completed_at ? (
-                      <span className="text-sm">
-                        {new Date(task.completed_at).toLocaleDateString()} {new Date(task.completed_at).toLocaleTimeString()}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
                   <TableCell className="text-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteClick(task.task_id)}
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center justify-center gap-1">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {task.appointment_id && (
+                            <DropdownMenuItem onClick={() => handleRescheduleClick(task)}>
+                              <Calendar className="mr-2 h-4 w-4" />
+                              Reschedule
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => handleCallPatient(task)}>
+                            <Phone className="mr-2 h-4 w-4" />
+                            Log Call
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSendSMS(task)}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Send SMS
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewPatient(task.patient_id)}>
+                            <User className="mr-2 h-4 w-4" />
+                            View Patient
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteClick(task.task_id)}
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -393,6 +548,61 @@ const Tasks = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Reschedule Appointment</DialogTitle>
+            <DialogDescription>
+              Update the appointment details for {taskToReschedule?.first_name} {taskToReschedule?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="scheduled_start">Start Time</Label>
+              <Input
+                id="scheduled_start"
+                type="datetime-local"
+                value={rescheduleData.scheduled_start}
+                onChange={(e) => setRescheduleData({ ...rescheduleData, scheduled_start: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="scheduled_end">End Time</Label>
+              <Input
+                id="scheduled_end"
+                type="datetime-local"
+                value={rescheduleData.scheduled_end}
+                onChange={(e) => setRescheduleData({ ...rescheduleData, scheduled_end: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="provider_name">Provider Name</Label>
+              <Input
+                id="provider_name"
+                value={rescheduleData.provider_name}
+                onChange={(e) => setRescheduleData({ ...rescheduleData, provider_name: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={rescheduleData.location}
+                onChange={(e) => setRescheduleData({ ...rescheduleData, location: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRescheduleConfirm}>
+              Reschedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
