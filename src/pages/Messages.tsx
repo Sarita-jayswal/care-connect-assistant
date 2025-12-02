@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Phone, Calendar, ArrowRight, ArrowLeft } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
 
 type Message = Database["public"]["Tables"]["messages"]["Row"] & {
   patients: Pick<Database["public"]["Tables"]["patients"]["Row"], "first_name" | "last_name" | "phone"> | null;
@@ -156,7 +157,7 @@ const Messages = () => {
                             <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
                             <div className="flex items-center gap-2 mt-2 text-xs opacity-70">
                               <Calendar className="h-3 w-3" />
-                              {new Date(msg.created_at).toLocaleString()}
+                              {format(new Date(msg.created_at), "PPp")}
                             </div>
                           </div>
                         </div>
