@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Phone, User, Calendar, Plus, Pencil, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -68,6 +69,8 @@ const Patients = () => {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deletingPatient, setDeletingPatient] = useState<Patient | null>(null);
+  const [selectedPatients, setSelectedPatients] = useState<string[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
@@ -197,6 +200,49 @@ const Patients = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedPatients.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from("patients")
+        .delete()
+        .in("id", selectedPatients);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${selectedPatients.length} patient(s) deleted successfully`,
+      });
+
+      setSelectedPatients([]);
+      setIsBulkDeleteOpen(false);
+      fetchPatients();
+    } catch (error) {
+      console.error("Error deleting patients:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete patients",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedPatients.length === filteredPatients.length) {
+      setSelectedPatients([]);
+    } else {
+      setSelectedPatients(filteredPatients.map((p) => p.id));
+    }
+  };
+
+  const toggleSelectPatient = (id: string) => {
+    setSelectedPatients((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -217,10 +263,21 @@ const Patients = () => {
           <h1 className="text-3xl font-bold">Patient Directory</h1>
           <p className="text-muted-foreground">Search and view all registered patients</p>
         </div>
-        <Button onClick={() => navigate('/create-patient')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Patient
-        </Button>
+        <div className="flex gap-2">
+          {selectedPatients.length > 0 && (
+            <Button
+              variant="destructive"
+              onClick={() => setIsBulkDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Selected ({selectedPatients.length})
+            </Button>
+          )}
+          <Button onClick={() => navigate('/create-patient')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Patient
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -243,6 +300,12 @@ const Patients = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedPatients.length === filteredPatients.length && filteredPatients.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Patient Name</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Date of Birth</TableHead>
@@ -254,13 +317,19 @@ const Patients = () => {
               <TableBody>
                 {filteredPatients.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       No patients found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredPatients.map((patient) => (
                     <TableRow key={patient.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedPatients.includes(patient.id)}
+                          onCheckedChange={() => toggleSelectPatient(patient.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
@@ -420,6 +489,23 @@ const Patients = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Patients</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedPatients.length} patient(s)? This will also delete all associated appointments, messages, and tasks for these patients. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete {selectedPatients.length} Patient(s)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

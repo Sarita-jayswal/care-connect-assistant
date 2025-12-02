@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Calendar, MapPin, User, Pencil, Plus, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -82,6 +83,8 @@ const Appointments = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deletingAppointment, setDeletingAppointment] = useState<Appointment | null>(null);
+  const [selectedAppointments, setSelectedAppointments] = useState<string[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -262,6 +265,49 @@ const Appointments = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedAppointments.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .delete()
+        .in("id", selectedAppointments);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${selectedAppointments.length} appointment(s) deleted successfully`,
+      });
+
+      setSelectedAppointments([]);
+      setIsBulkDeleteOpen(false);
+      fetchAppointments();
+    } catch (error) {
+      console.error("Error deleting appointments:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete appointments",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedAppointments.length === appointments.length) {
+      setSelectedAppointments([]);
+    } else {
+      setSelectedAppointments(appointments.map((a) => a.id));
+    }
+  };
+
+  const toggleSelectAppointment = (id: string) => {
+    setSelectedAppointments((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
   const getStatusVariant = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       SCHEDULED: "default",
@@ -293,10 +339,21 @@ const Appointments = () => {
           <h1 className="text-3xl font-bold">Appointments</h1>
           <p className="text-muted-foreground">View and manage all patient appointments</p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Appointment
-        </Button>
+        <div className="flex gap-2">
+          {selectedAppointments.length > 0 && (
+            <Button
+              variant="destructive"
+              onClick={() => setIsBulkDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Selected ({selectedAppointments.length})
+            </Button>
+          )}
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Appointment
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -311,6 +368,12 @@ const Appointments = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedAppointments.length === appointments.length && appointments.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Patient</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Date & Time</TableHead>
@@ -323,13 +386,19 @@ const Appointments = () => {
               <TableBody>
                 {appointments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       No appointments found
                     </TableCell>
                   </TableRow>
                 ) : (
                   appointments.map((appointment) => (
                     <TableRow key={appointment.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedAppointments.includes(appointment.id)}
+                          onCheckedChange={() => toggleSelectAppointment(appointment.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
@@ -640,6 +709,23 @@ const Appointments = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAppointment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Appointments</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedAppointments.length} appointment(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete {selectedAppointments.length} Appointment(s)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
