@@ -67,8 +67,13 @@ const appointmentSchema = z.object({
   status: z.enum(["SCHEDULED", "CONFIRMED", "RESCHEDULED", "CANCELLED", "MISSED"]),
 });
 
-const createAppointmentSchema = appointmentSchema.extend({
+const createAppointmentSchema = z.object({
   patient_id: z.string().uuid("Please select a patient"),
+  scheduled_start: z.string().min(1, "Start time is required"),
+  scheduled_end: z.string().min(1, "End time is required"),
+  provider_name: z.string().trim().min(1, "Provider name is required").max(200),
+  location: z.string().trim().min(1, "Location is required").max(500),
+  status: z.enum(["SCHEDULED", "CONFIRMED", "RESCHEDULED", "CANCELLED", "MISSED"]),
 });
 
 type AppointmentFormData = z.infer<typeof appointmentSchema>;
@@ -211,9 +216,9 @@ const Appointments = () => {
         .insert({
           patient_id: data.patient_id,
           scheduled_start: data.scheduled_start,
-          scheduled_end: data.scheduled_end || null,
-          provider_name: data.provider_name || null,
-          location: data.location || null,
+          scheduled_end: data.scheduled_end,
+          provider_name: data.provider_name,
+          location: data.location,
           status: data.status,
         });
 
@@ -624,9 +629,9 @@ const Appointments = () => {
                 name="scheduled_end"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Date & Time (Optional)</FormLabel>
+                    <FormLabel>End Date & Time *</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ""} type="datetime-local" />
+                      <Input {...field} type="datetime-local" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -637,9 +642,9 @@ const Appointments = () => {
                 name="provider_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Provider Name (Optional)</FormLabel>
+                    <FormLabel>Provider Name *</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ""} placeholder="Dr. Smith" />
+                      <Input {...field} placeholder="Dr. Smith" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -650,9 +655,9 @@ const Appointments = () => {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location (Optional)</FormLabel>
+                    <FormLabel>Location *</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ""} placeholder="Clinic Room 101" />
+                      <Input {...field} placeholder="Clinic Room 101" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
