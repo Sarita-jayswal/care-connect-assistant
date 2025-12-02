@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { format } from "date-fns";
 
 type Patient = Database["public"]["Tables"]["patients"]["Row"];
 import {
@@ -40,7 +42,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, MapPin, User, Pencil, Plus, Trash2 } from "lucide-react";
+import { Calendar, MapPin, User, Pencil, Plus, Trash2, Filter, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -81,6 +87,7 @@ type CreateAppointmentFormData = z.infer<typeof createAppointmentSchema>;
 
 const Appointments = () => {
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +97,16 @@ const Appointments = () => {
   const [deletingAppointment, setDeletingAppointment] = useState<Appointment | null>(null);
   const [selectedAppointments, setSelectedAppointments] = useState<string[]>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  
+  // Filter states from URL params
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    searchParams.get("startDate") ? new Date(searchParams.get("startDate")!) : undefined
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined
+  );
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") || "all");
+  const [providerFilter, setProviderFilter] = useState<string>(searchParams.get("provider") || "");
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -113,6 +130,16 @@ const Appointments = () => {
       status: "SCHEDULED",
     },
   });
+
+  // Update URL params when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (startDate) params.set("startDate", format(startDate, "yyyy-MM-dd"));
+    if (endDate) params.set("endDate", format(endDate, "yyyy-MM-dd"));
+    if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
+    if (providerFilter) params.set("provider", providerFilter);
+    setSearchParams(params, { replace: true });
+  }, [startDate, endDate, statusFilter, providerFilter]);
 
   useEffect(() => {
     fetchAppointments();
@@ -300,10 +327,10 @@ const Appointments = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedAppointments.length === appointments.length) {
+    if (selectedAppointments.length === filteredAppointments.length) {
       setSelectedAppointments([]);
     } else {
-      setSelectedAppointments(appointments.map((a) => a.id));
+      setSelectedAppointments(filteredAppointments.map((a) => a.id));
     }
   };
 
@@ -312,6 +339,49 @@ const Appointments = () => {
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
+
+  // Filter appointments based on filters
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter((appointment) => {
+      // Date range filter
+      if (startDate) {
+        const appointmentDate = new Date(appointment.scheduled_start);
+        if (appointmentDate < startDate) return false;
+      }
+      if (endDate) {
+        const appointmentDate = new Date(appointment.scheduled_start);
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (appointmentDate > endOfDay) return false;
+      }
+      
+      // Status filter
+      if (statusFilter && statusFilter !== "all" && appointment.status !== statusFilter) {
+        return false;
+      }
+      
+      // Provider name filter
+      if (providerFilter && appointment.provider_name) {
+        if (!appointment.provider_name.toLowerCase().includes(providerFilter.toLowerCase())) {
+          return false;
+        }
+      } else if (providerFilter && !appointment.provider_name) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [appointments, startDate, endDate, statusFilter, providerFilter]);
+
+  const clearFilters = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setStatusFilter("all");
+    setProviderFilter("");
+    setSearchParams({}, { replace: true });
+  };
+
+  const hasActiveFilters = startDate || endDate || (statusFilter && statusFilter !== "all") || providerFilter;
 
   const getStatusVariant = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -365,8 +435,113 @@ const Appointments = () => {
         <CardHeader>
           <CardTitle>All Appointments</CardTitle>
           <CardDescription>
-            Total: {appointments.length} appointments
+            Total: {appointments.length} appointments | Showing: {filteredAppointments.length}
           </CardDescription>
+          
+          {/* Filters */}
+          <div className="pt-4 space-y-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filters:</span>
+              
+              {/* Date Range Filter */}
+              <div className="flex items-center gap-2">
+                <Label className="text-sm text-muted-foreground">From:</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : "Start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Label className="text-sm text-muted-foreground">To:</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : "End date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex items-center gap-2">
+                <Label className="text-sm text-muted-foreground">Status:</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[150px] h-9">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                    <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                    <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="MISSED">Missed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Provider Filter */}
+              <div className="flex items-center gap-2">
+                <Label className="text-sm text-muted-foreground">Provider:</Label>
+                <Input
+                  placeholder="Search provider..."
+                  value={providerFilter}
+                  onChange={(e) => setProviderFilter(e.target.value)}
+                  className="w-[200px] h-9"
+                />
+              </div>
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-9"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border">
@@ -375,7 +550,7 @@ const Appointments = () => {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedAppointments.length === appointments.length && appointments.length > 0}
+                      checked={selectedAppointments.length === filteredAppointments.length && filteredAppointments.length > 0}
                       onCheckedChange={toggleSelectAll}
                     />
                   </TableHead>
@@ -389,14 +564,14 @@ const Appointments = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {appointments.length === 0 ? (
+                {filteredAppointments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                      No appointments found
+                      {hasActiveFilters ? "No appointments match the current filters" : "No appointments found"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  appointments.map((appointment) => (
+                  filteredAppointments.map((appointment) => (
                     <TableRow key={appointment.id}>
                       <TableCell>
                         <Checkbox
