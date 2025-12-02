@@ -93,15 +93,13 @@ const Index = () => {
             Dashboard
           </h1>
           <p className="text-muted-foreground text-lg">
-            {role === "staff" ? "Healthcare Staff Overview" : "Welcome to your patient portal"}
+            Healthcare Staff Overview
           </p>
         </div>
         <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
       </div>
 
-      {role === "staff" ? (
-        <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Card className="medical-card hover:shadow-strong transition-all duration-300 group">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Open Tasks</CardTitle>
@@ -234,47 +232,6 @@ const Index = () => {
               </div>
             </CardContent>
           </Card>
-        </>
-      ) : (
-        <Card className="medical-card">
-          <CardHeader>
-            <CardTitle className="text-2xl font-outfit">Welcome to Your Patient Portal</CardTitle>
-            <CardDescription className="text-base">Access your appointments and messages</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              <a
-                href="/my-appointments"
-                className="p-6 rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:shadow-medium transition-all duration-300 group"
-              >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                    <Calendar className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="font-semibold text-lg">My Appointments</p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  View your upcoming and past appointments
-                </p>
-              </a>
-              <a
-                href="/my-messages"
-                className="p-6 rounded-xl border border-border/50 hover:border-accent/50 hover:bg-accent/5 hover:shadow-medium transition-all duration-300 group"
-              >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
-                    <MessageSquare className="h-6 w-6 text-accent" />
-                  </div>
-                  <p className="font-semibold text-lg">My Messages</p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Your conversation history with the clinic
-                </p>
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
