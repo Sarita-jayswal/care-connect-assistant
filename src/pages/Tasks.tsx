@@ -49,7 +49,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Trash2, MoreVertical, Calendar, Phone, MessageSquare, User, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 
 interface TaskData {
   task_id: string;
