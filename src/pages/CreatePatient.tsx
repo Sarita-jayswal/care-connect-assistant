@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, UserPlus, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface PatientForm {
@@ -20,6 +20,7 @@ const CreatePatient = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [generatingId, setGeneratingId] = useState(false);
   const [form, setForm] = useState<PatientForm>({
     first_name: "",
     last_name: "",
@@ -27,6 +28,49 @@ const CreatePatient = () => {
     date_of_birth: "",
     external_id: "",
   });
+
+  // Generate next external ID on component mount
+  useEffect(() => {
+    generateNextExternalId();
+  }, []);
+
+  const generateNextExternalId = async () => {
+    setGeneratingId(true);
+    try {
+      // Get the latest patient with external_id starting with "PAT-"
+      const { data, error } = await supabase
+        .from("patients")
+        .select("external_id")
+        .like("external_id", "PAT-%")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      let nextNumber = 1;
+      if (data && data.length > 0) {
+        // Extract number from last external_id (e.g., "PAT-0042" -> 42)
+        const lastId = data[0].external_id;
+        const match = lastId?.match(/PAT-(\d+)/);
+        if (match) {
+          nextNumber = parseInt(match[1], 10) + 1;
+        }
+      }
+
+      // Format with leading zeros (e.g., PAT-0001)
+      const newExternalId = `PAT-${nextNumber.toString().padStart(4, '0')}`;
+      setForm(prev => ({ ...prev, external_id: newExternalId }));
+    } catch (error) {
+      console.error('Error generating external ID:', error);
+      toast({
+        title: "Warning",
+        description: "Could not auto-generate ID. Please enter manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingId(false);
+    }
+  };
 
   const handleInputChange = (field: keyof PatientForm, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -168,14 +212,30 @@ const CreatePatient = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="external_id">External ID *</Label>
-              <Input
-                id="external_id"
-                value={form.external_id}
-                onChange={(e) => handleInputChange('external_id', e.target.value)}
-                placeholder="e.g., Medical record number"
-                required
-              />
+              <Label htmlFor="external_id">Patient ID *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="external_id"
+                  value={form.external_id}
+                  onChange={(e) => handleInputChange('external_id', e.target.value)}
+                  placeholder="PAT-0001"
+                  required
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={generateNextExternalId}
+                  disabled={generatingId}
+                  title="Generate new ID"
+                >
+                  <RefreshCw className={`h-4 w-4 ${generatingId ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Auto-generated format: PAT-0001, PAT-0002, etc.
+              </p>
             </div>
 
             <div className="flex gap-3 pt-4">
