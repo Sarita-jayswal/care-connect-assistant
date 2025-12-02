@@ -53,8 +53,8 @@ const patientSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(100),
   last_name: z.string().trim().min(1, "Last name is required").max(100),
   phone: z.string().trim().regex(/^\+61[2-478]\d{8}$/, "Phone must be in Australian format: +61[2-478]XXXXXXXX"),
-  date_of_birth: z.string().optional(),
-  external_id: z.string().trim().max(100).optional().nullable(),
+  date_of_birth: z.string().min(1, "Date of birth is required"),
+  external_id: z.string().trim().min(1, "External ID is required").max(100),
 });
 
 type PatientFormData = z.infer<typeof patientSchema>;
@@ -148,8 +148,8 @@ const Patients = () => {
           first_name: data.first_name,
           last_name: data.last_name,
           phone: data.phone,
-          date_of_birth: data.date_of_birth || null,
-          external_id: data.external_id || null,
+          date_of_birth: data.date_of_birth,
+          external_id: data.external_id,
         })
         .eq("id", editingPatient.id);
 
@@ -454,9 +454,9 @@ const Patients = () => {
                 name="external_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>External ID (Optional)</FormLabel>
+                    <FormLabel>External ID *</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ""} placeholder="External system ID" />
+                      <Input {...field} placeholder="External system ID" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

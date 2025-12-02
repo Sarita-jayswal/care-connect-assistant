@@ -38,7 +38,7 @@ const CreatePatient = () => {
 
     try {
       // Validate required fields
-      if (!form.first_name || !form.last_name || !form.phone) {
+      if (!form.first_name || !form.last_name || !form.phone || !form.date_of_birth || !form.external_id) {
         toast({
           title: "Validation Error",
           description: "Please fill in all required fields",
@@ -64,8 +64,8 @@ const CreatePatient = () => {
           first_name: form.first_name,
           last_name: form.last_name,
           phone: form.phone,
-          date_of_birth: form.date_of_birth || null,
-          external_id: form.external_id || null,
+          date_of_birth: form.date_of_birth,
+          external_id: form.external_id,
         },
         method: 'POST',
       });
@@ -170,22 +170,24 @@ const CreatePatient = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date_of_birth">Date of Birth</Label>
+              <Label htmlFor="date_of_birth">Date of Birth *</Label>
               <Input
                 id="date_of_birth"
                 type="date"
                 value={form.date_of_birth}
                 onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="external_id">External ID (Optional)</Label>
+              <Label htmlFor="external_id">External ID *</Label>
               <Input
                 id="external_id"
                 value={form.external_id}
                 onChange={(e) => handleInputChange('external_id', e.target.value)}
                 placeholder="e.g., Medical record number"
+                required
               />
             </div>
 
