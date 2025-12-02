@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import carefollowLogo from "@/assets/carefollow-logo.png";
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 const emailSchema = z.string().trim().min(1, "Email is required").email("Invalid email address").max(255, "Email is too long");
@@ -576,14 +577,12 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-strong border-border/50 backdrop-blur-sm animate-fade-in">
         <CardHeader className="space-y-3 pb-6">
           <div className="flex items-center justify-center mb-2">
-            <div className="w-16 h-16 rounded-2xl medical-gradient-bg flex items-center justify-center shadow-glow">
-              <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+            <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center shadow-glow">
+              <img src={carefollowLogo} alt="CareFollow" className="w-16 h-16" />
             </div>
           </div>
           <CardTitle className="text-3xl font-outfit text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TeleHealth Portal
+            CareFollow Portal
           </CardTitle>
           <CardDescription className="text-center text-base">
             {isSignup ? "Create your healthcare account" : "Welcome back to your healthcare portal"}
