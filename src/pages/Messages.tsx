@@ -138,7 +138,7 @@ const Messages = () => {
               <CardContent>
                 <ScrollArea className="h-[300px] w-full rounded-md border p-4">
                   <div className="space-y-4">
-                    {[...msgs].reverse().map((msg, idx) => (
+                    {msgs.map((msg, idx) => (
                       <div key={msg.id}>
                         <div
                           className={`flex ${
