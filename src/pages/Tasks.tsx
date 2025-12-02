@@ -29,6 +29,7 @@ interface TaskData {
   risk_score: number;
   task_created_at: string;
   completed_at: string | null;
+  description: string | null;
   patient_id: string;
   first_name: string;
   last_name: string;
@@ -222,6 +223,7 @@ const Tasks = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Task Type</TableHead>
+              <TableHead>Details</TableHead>
               <TableHead>Patient Name</TableHead>
               <TableHead>Patient Phone</TableHead>
               <TableHead>Appointment Status</TableHead>
@@ -234,7 +236,7 @@ const Tasks = () => {
           <TableBody>
             {filteredTasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   No tasks found
                 </TableCell>
               </TableRow>
@@ -242,6 +244,15 @@ const Tasks = () => {
               filteredTasks.map((task) => (
                 <TableRow key={task.task_id}>
                   <TableCell className="font-medium">{task.task_type}</TableCell>
+                  <TableCell className="max-w-xs">
+                    {task.description ? (
+                      <span className="text-sm text-muted-foreground line-clamp-2">
+                        {task.description}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {task.first_name} {task.last_name}
                   </TableCell>
