@@ -383,13 +383,23 @@ const Tasks = () => {
     : tasks.filter(task => task.task_status === 'DONE');
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Follow-up Tasks</h1>
+    <div className="p-8 space-y-6 animate-fade-in">
+      <div className="relative">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-4xl font-outfit font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Follow-up Tasks
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Manage patient follow-ups and track care coordination
+          </p>
+        </div>
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
+      </div>
       
-      <div className="flex items-center gap-3 mb-4">
-        <Label htmlFor="filter-status">Filter by status:</Label>
+      <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-subtle border border-border/50">
+        <Label htmlFor="filter-status" className="text-sm font-medium">Filter by status:</Label>
         <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
-          <SelectTrigger id="filter-status" className="w-[180px] bg-background">
+          <SelectTrigger id="filter-status" className="w-[200px] bg-background shadow-soft">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-background z-50">
@@ -400,7 +410,7 @@ const Tasks = () => {
         </Select>
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="medical-card">
         <Table>
           <TableHeader>
             <TableRow>

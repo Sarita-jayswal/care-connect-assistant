@@ -86,81 +86,98 @@ const Index = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          {role === "staff" ? "Healthcare Staff Overview" : "Welcome to your patient portal"}
-        </p>
+    <div className="p-8 space-y-8 animate-fade-in">
+      <div className="relative">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-4xl font-outfit font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            {role === "staff" ? "Healthcare Staff Overview" : "Welcome to your patient portal"}
+          </p>
+        </div>
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
       </div>
 
       {role === "staff" ? (
         <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-            <Card>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="medical-card hover:shadow-strong transition-all duration-300 group">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Open Tasks</CardTitle>
-                <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">Open Tasks</CardTitle>
+                <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.openTasks}</div>
-                <p className="text-xs text-muted-foreground">Requires attention</p>
+                <div className="text-3xl font-outfit font-bold text-primary">{stats.openTasks}</div>
+                <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="medical-card hover:shadow-strong transition-all duration-300 group">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Upcoming Appointments</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming Appointments</CardTitle>
+                <div className="p-2 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                  <Calendar className="h-4 w-4 text-accent" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.upcomingAppointments}</div>
-                <p className="text-xs text-muted-foreground">Scheduled</p>
+                <div className="text-3xl font-outfit font-bold text-accent">{stats.upcomingAppointments}</div>
+                <p className="text-xs text-muted-foreground mt-1">Scheduled</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="medical-card hover:shadow-strong transition-all duration-300 group">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Patients</CardTitle>
+                <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalPatients}</div>
-                <p className="text-xs text-muted-foreground">Registered</p>
+                <div className="text-3xl font-outfit font-bold text-primary">{stats.totalPatients}</div>
+                <p className="text-xs text-muted-foreground mt-1">Registered</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="medical-card hover:shadow-strong transition-all duration-300 group">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Messages (7 days)</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">Messages (7 days)</CardTitle>
+                <div className="p-2 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                  <MessageSquare className="h-4 w-4 text-accent" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.recentMessages}</div>
-                <p className="text-xs text-muted-foreground">SMS activity</p>
+                <div className="text-3xl font-outfit font-bold text-accent">{stats.recentMessages}</div>
+                <p className="text-xs text-muted-foreground mt-1">SMS activity</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="medical-card">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-2xl font-outfit">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
                 Quick Access
               </CardTitle>
-              <CardDescription>Jump to key sections of the healthcare assistant</CardDescription>
+              <CardDescription className="text-base">Jump to key sections of the telehealth assistant</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
                 <a
                   href="/tasks"
-                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="p-5 rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:shadow-medium transition-all duration-300 group"
                 >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <ClipboardList className="h-6 w-6 text-primary" />
+                    </div>
                     <div>
-                      <p className="font-medium">Follow-up Tasks</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-semibold text-foreground group-hover:text-primary transition-colors">Follow-up Tasks</p>
+                      <p className="text-sm text-muted-foreground mt-1">
                         Manage patient follow-ups and reminders
                       </p>
                     </div>
@@ -168,13 +185,15 @@ const Index = () => {
                 </a>
                 <a
                   href="/appointments"
-                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="p-5 rounded-xl border border-border/50 hover:border-accent/50 hover:bg-accent/5 hover:shadow-medium transition-all duration-300 group"
                 >
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                      <Calendar className="h-6 w-6 text-accent" />
+                    </div>
                     <div>
-                      <p className="font-medium">Appointments</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-semibold text-foreground group-hover:text-accent transition-colors">Appointments</p>
+                      <p className="text-sm text-muted-foreground mt-1">
                         View all scheduled appointments
                       </p>
                     </div>
@@ -182,13 +201,15 @@ const Index = () => {
                 </a>
                 <a
                   href="/messages"
-                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="p-5 rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:shadow-medium transition-all duration-300 group"
                 >
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <MessageSquare className="h-6 w-6 text-primary" />
+                    </div>
                     <div>
-                      <p className="font-medium">Messages</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-semibold text-foreground group-hover:text-primary transition-colors">Messages</p>
+                      <p className="text-sm text-muted-foreground mt-1">
                         SMS conversations with patients
                       </p>
                     </div>
@@ -196,13 +217,15 @@ const Index = () => {
                 </a>
                 <a
                   href="/patients"
-                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="p-5 rounded-xl border border-border/50 hover:border-accent/50 hover:bg-accent/5 hover:shadow-medium transition-all duration-300 group"
                 >
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                      <Users className="h-6 w-6 text-accent" />
+                    </div>
                     <div>
-                      <p className="font-medium">Patient Directory</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-semibold text-foreground group-hover:text-accent transition-colors">Patient Directory</p>
+                      <p className="text-sm text-muted-foreground mt-1">
                         Search and view patient records
                       </p>
                     </div>
@@ -213,20 +236,22 @@ const Index = () => {
           </Card>
         </>
       ) : (
-        <Card>
+        <Card className="medical-card">
           <CardHeader>
-            <CardTitle>Welcome to Your Patient Portal</CardTitle>
-            <CardDescription>Access your appointments and messages</CardDescription>
+            <CardTitle className="text-2xl font-outfit">Welcome to Your Patient Portal</CardTitle>
+            <CardDescription className="text-base">Access your appointments and messages</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
               <a
                 href="/my-appointments"
-                className="p-6 rounded-lg border hover:bg-muted/50 transition-colors"
+                className="p-6 rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:shadow-medium transition-all duration-300 group"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <Calendar className="h-6 w-6 text-primary" />
-                  <p className="font-semibold">My Appointments</p>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                    <Calendar className="h-6 w-6 text-primary" />
+                  </div>
+                  <p className="font-semibold text-lg">My Appointments</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   View your upcoming and past appointments
@@ -234,11 +259,13 @@ const Index = () => {
               </a>
               <a
                 href="/my-messages"
-                className="p-6 rounded-lg border hover:bg-muted/50 transition-colors"
+                className="p-6 rounded-xl border border-border/50 hover:border-accent/50 hover:bg-accent/5 hover:shadow-medium transition-all duration-300 group"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <MessageSquare className="h-6 w-6 text-primary" />
-                  <p className="font-semibold">My Messages</p>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                    <MessageSquare className="h-6 w-6 text-accent" />
+                  </div>
+                  <p className="font-semibold text-lg">My Messages</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Your conversation history with the clinic

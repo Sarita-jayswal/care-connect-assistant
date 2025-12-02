@@ -425,33 +425,39 @@ const Appointments = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Appointments</h1>
-          <p className="text-muted-foreground">View and manage all patient appointments</p>
+    <div className="p-8 space-y-6 animate-fade-in">
+      <div className="flex justify-between items-start">
+        <div className="relative flex-1">
+          <div className="flex flex-col space-y-2">
+            <h1 className="text-4xl font-outfit font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Appointments
+            </h1>
+            <p className="text-muted-foreground text-lg">View and manage all patient appointments</p>
+          </div>
+          <div className="absolute -top-4 -left-4 w-24 h-24 bg-accent/5 rounded-full blur-2xl"></div>
         </div>
         <div className="flex gap-2">
           {selectedAppointments.length > 0 && (
             <Button
               variant="destructive"
               onClick={() => setIsBulkDeleteOpen(true)}
+              className="shadow-soft"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete Selected ({selectedAppointments.length})
             </Button>
           )}
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="shadow-soft medical-gradient-bg hover:opacity-90 transition-opacity">
             <Plus className="h-4 w-4 mr-2" />
             Create Appointment
           </Button>
         </div>
       </div>
 
-      <Card>
+      <Card className="medical-card">
         <CardHeader>
-          <CardTitle>All Appointments</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-outfit">All Appointments</CardTitle>
+          <CardDescription className="text-base">
             Total: {appointments.length} appointments | Showing: {filteredAppointments.length}
           </CardDescription>
           

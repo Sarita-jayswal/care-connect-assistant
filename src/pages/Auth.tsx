@@ -565,12 +565,28 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Healthcare Portal</CardTitle>
-          <CardDescription>
-            {isSignup ? "Create your account" : "Sign in to your account"}
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
+      {/* Animated background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+      
+      <Card className="w-full max-w-md shadow-strong border-border/50 backdrop-blur-sm animate-fade-in">
+        <CardHeader className="space-y-3 pb-6">
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-16 h-16 rounded-2xl medical-gradient-bg flex items-center justify-center shadow-glow">
+              <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-outfit text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            TeleHealth Portal
+          </CardTitle>
+          <CardDescription className="text-center text-base">
+            {isSignup ? "Create your healthcare account" : "Welcome back to your healthcare portal"}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -257,33 +257,39 @@ const Patients = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Patient Directory</h1>
-          <p className="text-muted-foreground">Search and view all registered patients</p>
+    <div className="p-8 space-y-6 animate-fade-in">
+      <div className="flex items-start justify-between">
+        <div className="relative flex-1">
+          <div className="flex flex-col space-y-2">
+            <h1 className="text-4xl font-outfit font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Patient Directory
+            </h1>
+            <p className="text-muted-foreground text-lg">Search and view all registered patients</p>
+          </div>
+          <div className="absolute -top-4 -left-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
         </div>
         <div className="flex gap-2">
           {selectedPatients.length > 0 && (
             <Button
               variant="destructive"
               onClick={() => setIsBulkDeleteOpen(true)}
+              className="shadow-soft"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete Selected ({selectedPatients.length})
             </Button>
           )}
-          <Button onClick={() => navigate('/create-patient')}>
+          <Button onClick={() => navigate('/create-patient')} className="shadow-soft medical-gradient-bg hover:opacity-90 transition-opacity">
             <Plus className="mr-2 h-4 w-4" />
             Create Patient
           </Button>
         </div>
       </div>
 
-      <Card>
+      <Card className="medical-card">
         <CardHeader>
-          <CardTitle>All Patients</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-outfit">All Patients</CardTitle>
+          <CardDescription className="text-base">
             Total: {patients.length} patients | Showing: {filteredPatients.length}
           </CardDescription>
           <div className="pt-4">
@@ -291,7 +297,7 @@ const Patients = () => {
               placeholder="Search by name, phone, or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md"
+              className="max-w-md shadow-soft"
             />
           </div>
         </CardHeader>
