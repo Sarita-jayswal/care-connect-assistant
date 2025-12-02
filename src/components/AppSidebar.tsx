@@ -1,4 +1,4 @@
-import { Home, ClipboardList, Calendar, MessageSquare, Users, LogOut } from "lucide-react";
+import { Home, ClipboardList, Calendar, MessageSquare, Users, FileText, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -23,6 +23,7 @@ const staffItems = [
   { title: "Appointments", url: "/appointments", icon: Calendar },
   { title: "Messages", url: "/messages", icon: MessageSquare },
   { title: "Patients", url: "/patients", icon: Users },
+  { title: "Audit Log", url: "/audit-log", icon: FileText },
 ];
 
 const patientItems = [
