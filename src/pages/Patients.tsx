@@ -162,11 +162,12 @@ const Patients = () => {
 
       setIsEditDialogOpen(false);
       fetchPatients();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating patient:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to update patient details";
       toast({
-        title: "Error",
-        description: "Failed to update patient details",
+        title: "Error Updating Patient",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -190,11 +191,12 @@ const Patients = () => {
 
       setDeletingPatient(null);
       fetchPatients();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting patient:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to delete patient";
       toast({
-        title: "Error",
-        description: "Failed to delete patient",
+        title: "Error Deleting Patient",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -219,11 +221,12 @@ const Patients = () => {
       setSelectedPatients([]);
       setIsBulkDeleteOpen(false);
       fetchPatients();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting patients:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to delete patients";
       toast({
-        title: "Error",
-        description: "Failed to delete patients",
+        title: "Error Deleting Patients",
+        description: errorMessage,
         variant: "destructive",
       });
     }

@@ -140,9 +140,10 @@ const CreatePatient = () => {
 
     } catch (error: any) {
       console.error('Error:', error);
+      const errorMessage = error?.message || error?.error_description || "Failed to create patient";
       toast({
-        title: "Error",
-        description: error.message || "Failed to create patient",
+        title: "Error Creating Patient",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

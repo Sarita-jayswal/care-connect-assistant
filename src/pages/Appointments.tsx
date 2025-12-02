@@ -243,11 +243,12 @@ const Appointments = () => {
 
       setIsEditDialogOpen(false);
       fetchAppointments();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating appointment:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to update appointment";
       toast({
-        title: "Error",
-        description: "Failed to update appointment",
+        title: "Error Updating Appointment",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -276,11 +277,12 @@ const Appointments = () => {
       setIsCreateDialogOpen(false);
       createForm.reset();
       fetchAppointments();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating appointment:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to create appointment";
       toast({
-        title: "Error",
-        description: "Failed to create appointment",
+        title: "Error Creating Appointment",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -304,11 +306,12 @@ const Appointments = () => {
 
       setDeletingAppointment(null);
       fetchAppointments();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting appointment:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to delete appointment";
       toast({
-        title: "Error",
-        description: "Failed to delete appointment",
+        title: "Error Deleting Appointment",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -333,11 +336,12 @@ const Appointments = () => {
       setSelectedAppointments([]);
       setIsBulkDeleteOpen(false);
       fetchAppointments();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting appointments:", error);
+      const errorMessage = error?.message || error?.error_description || "Failed to delete appointments";
       toast({
-        title: "Error",
-        description: "Failed to delete appointments",
+        title: "Error Deleting Appointments",
+        description: errorMessage,
         variant: "destructive",
       });
     }
