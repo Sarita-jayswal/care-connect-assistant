@@ -1,0 +1,589 @@
+{
+  "name": "Detect missed appointments",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f30a3b85-ab59-42cb-8d9f-b7abc0897a57",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  a.id AS appointment_id,\n  a.patient_id,\n  p.first_name,\n  p.last_name,\n  a.scheduled_start,\n  a.status\nFROM public.appointments a\nJOIN public.patients p ON p.id = a.patient_id\nWHERE\n  a.status = 'SCHEDULED'\n  AND a.scheduled_start BETWEEN (NOW() - INTERVAL '7 days') AND (NOW() - INTERVAL '1 hour');",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "72397613-b124-4b60-8b44-bf6d31a9d67e",
+      "name": "find missed appointments",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "appointments",
+          "mode": "list",
+          "cachedResultName": "appointments"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.appointment_id }}",
+            "status": "MISSED",
+            "updated_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source_system_id",
+              "displayName": "source_system_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "scheduled_start",
+              "displayName": "scheduled_start",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "scheduled_end",
+              "displayName": "scheduled_end",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SCHEDULED",
+                  "value": "SCHEDULED"
+                },
+                {
+                  "name": "CONFIRMED",
+                  "value": "CONFIRMED"
+                },
+                {
+                  "name": "RESCHEDULED",
+                  "value": "RESCHEDULED"
+                },
+                {
+                  "name": "CANCELLED",
+                  "value": "CANCELLED"
+                },
+                {
+                  "name": "MISSED",
+                  "value": "MISSED"
+                }
+              ]
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "provider_name",
+              "displayName": "provider_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reminder_24h_sent_at",
+              "displayName": "reminder_24h_sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "reminder_2h_sent_at",
+              "displayName": "reminder_2h_sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        368,
+        0
+      ],
+      "id": "0da78df1-738e-4139-bf34-d9958936aa16",
+      "name": "update status to missed",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "follow_up_tasks",
+          "mode": "list",
+          "cachedResultName": "follow_up_tasks"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "patient_id": "={{ $json.patient_id }}",
+            "appointment_id": "={{ $json.id }}",
+            "type": "MISSED_APPOINTMENT",
+            "description": "={{\n  'Missed appointment auto-detected for patient ' +\n  $('find missed appointments').item.json.first_name +\n  ' ' +\n  $('find missed appointments').item.json.last_name +\n  ' (ID ' +\n  $('find missed appointments').item.json.patient_id +\n  ')'\n}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "appointment_id",
+              "displayName": "appointment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "MISSED_APPOINTMENT",
+                  "value": "MISSED_APPOINTMENT"
+                },
+                {
+                  "name": "NO_RESPONSE",
+                  "value": "NO_RESPONSE"
+                },
+                {
+                  "name": "SYMPTOM_ALERT",
+                  "value": "SYMPTOM_ALERT"
+                }
+              ]
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "LOW",
+                  "value": "LOW"
+                },
+                {
+                  "name": "MEDIUM",
+                  "value": "MEDIUM"
+                },
+                {
+                  "name": "HIGH",
+                  "value": "HIGH"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "OPEN",
+                  "value": "OPEN"
+                },
+                {
+                  "name": "IN_PROGRESS",
+                  "value": "IN_PROGRESS"
+                },
+                {
+                  "name": "DONE",
+                  "value": "DONE"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "risk_score",
+              "displayName": "risk_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "completed_at",
+              "displayName": "completed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        576,
+        0
+      ],
+      "id": "e7f4aef9-69e0-44cc-9f99-eee3e90c102d",
+      "name": "follow_up_tasks",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "audit_log",
+          "mode": "list",
+          "cachedResultName": "audit_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event_type": "MISSED_APPOINTMENT_DETECTED",
+            "patient_id": "={{ $json.patient_id }}",
+            "appointment_id": "={{ $json.appointment_id }}",
+            "metadata": "={{   JSON.stringify({     follow_up_task_id: $json.id,     type: $json.type,     description: $json.description   }) }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "appointment_id",
+              "displayName": "appointment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "metadata",
+              "displayName": "metadata",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_by",
+              "displayName": "created_by",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        784,
+        0
+      ],
+      "id": "901750c1-b826-4d14-8877-4da6ff3f77f9",
+      "name": "audit_log for missed apointments",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "find missed appointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find missed appointments": {
+      "main": [
+        [
+          {
+            "node": "update status to missed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update status to missed": {
+      "main": [
+        [
+          {
+            "node": "follow_up_tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "follow_up_tasks": {
+      "main": [
+        [
+          {
+            "node": "audit_log for missed apointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": []
+    }
+  },
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

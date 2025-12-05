@@ -1,0 +1,989 @@
+{
+  "name": "Sarita's 2HR REMINDER workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  a.id AS appointment_id,\n  p.id AS patient_id,\n  p.first_name,\n  p.last_name,\n  p.phone,\n  a.scheduled_start,\n  to_char(a.scheduled_start AT TIME ZONE 'Australia/Adelaide', 'YYYY-MM-DD HH24:MI') AS scheduled_local,\n  a.status\nFROM public.appointments a\nJOIN public.patients p ON p.id = a.patient_id\nWHERE\n  a.status = 'SCHEDULED'\n  AND a.reminder_2h_sent_at IS NULL\n  AND a.scheduled_start BETWEEN NOW() AND (NOW() + INTERVAL '2 hours')\nORDER BY a.scheduled_start;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "6d3a8713-2809-4437-95a6-d9ee68662e9a",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "messages",
+          "mode": "list",
+          "cachedResultName": "messages"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "patient_id": "={{ $json.patient_id }}",
+            "appointment_id": "={{ $json.appointment_id }}",
+            "direction": "OUTBOUND",
+            "channel": "={{ $json.channel }}",
+            "body": "={{ $json.text }}",
+            "status": "SENT",
+            "phone": "={{ $json.to}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "appointment_id",
+              "displayName": "appointment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "direction",
+              "displayName": "direction",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "OUTBOUND",
+                  "value": "OUTBOUND"
+                },
+                {
+                  "name": "INBOUND",
+                  "value": "INBOUND"
+                }
+              ]
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SMS",
+                  "value": "SMS"
+                },
+                {
+                  "name": "WHATSAPP",
+                  "value": "WHATSAPP"
+                }
+              ]
+            },
+            {
+              "id": "template_key",
+              "displayName": "template_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SENT",
+                  "value": "SENT"
+                },
+                {
+                  "name": "DELIVERED",
+                  "value": "DELIVERED"
+                },
+                {
+                  "name": "FAILED",
+                  "value": "FAILED"
+                },
+                {
+                  "name": "RECEIVED",
+                  "value": "RECEIVED"
+                }
+              ],
+              "removed": false
+            },
+            {
+              "id": "provider_message_id",
+              "displayName": "provider_message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "provider_status",
+              "displayName": "provider_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "outputColumns": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        304,
+        0
+      ],
+      "id": "eebd58d4-3bc5-44e2-b1c8-65e9ee0c9fa4",
+      "name": "Insert rows in messages table",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "+14198206195",
+        "to": "={{ $('set node (reminder payload)').item.json.to }}",
+        "message": "={{ $('set node (reminder payload)').item.json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        528,
+        72
+      ],
+      "id": "63bd157d-81bd-44f9-b716-f89a3a610842",
+      "name": "Send an SMS/MMS/WhatsApp message",
+      "credentials": {
+        "twilioApi": {
+          "id": "9ZA1qe51LkHIQ5W4",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        752,
+        0
+      ],
+      "id": "5fbc1b4d-494a-4176-b635-9fc57156aad0",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -368,
+        0
+      ],
+      "id": "e64b9b03-b9ef-457a-9f1c-31adc8ff0319",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "messages",
+          "mode": "list",
+          "cachedResultName": "messages"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "provider_message_id": "={{ $json.sid }}",
+            "sent_at": "={{ new Date().toISOString() }}",
+            "provider_status": "={{ $json.status }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "appointment_id",
+              "displayName": "appointment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "direction",
+              "displayName": "direction",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "OUTBOUND",
+                  "value": "OUTBOUND"
+                },
+                {
+                  "name": "INBOUND",
+                  "value": "INBOUND"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SMS",
+                  "value": "SMS"
+                },
+                {
+                  "name": "WHATSAPP",
+                  "value": "WHATSAPP"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "template_key",
+              "displayName": "template_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SENT",
+                  "value": "SENT"
+                },
+                {
+                  "name": "DELIVERED",
+                  "value": "DELIVERED"
+                },
+                {
+                  "name": "FAILED",
+                  "value": "FAILED"
+                },
+                {
+                  "name": "RECEIVED",
+                  "value": "RECEIVED"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "provider_message_id",
+              "displayName": "provider_message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "provider_status",
+              "displayName": "provider_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        976,
+        0
+      ],
+      "id": "a4d6aa9d-e852-447e-a0a8-e45110eab191",
+      "name": "Update rows in a messages table",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "appointments",
+          "mode": "list",
+          "cachedResultName": "appointments"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.appointment_id }}",
+            "reminder_2h_sent_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source_system_id",
+              "displayName": "source_system_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "scheduled_start",
+              "displayName": "scheduled_start",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "scheduled_end",
+              "displayName": "scheduled_end",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "SCHEDULED",
+                  "value": "SCHEDULED"
+                },
+                {
+                  "name": "CONFIRMED",
+                  "value": "CONFIRMED"
+                },
+                {
+                  "name": "RESCHEDULED",
+                  "value": "RESCHEDULED"
+                },
+                {
+                  "name": "CANCELLED",
+                  "value": "CANCELLED"
+                },
+                {
+                  "name": "MISSED",
+                  "value": "MISSED"
+                }
+              ],
+              "removed": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "provider_name",
+              "displayName": "provider_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "reminder_24h_sent_at",
+              "displayName": "reminder_24h_sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "reminder_2h_sent_at",
+              "displayName": "reminder_2h_sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1200,
+        0
+      ],
+      "id": "cdc89ba5-2d8b-41e1-84c4-415458ffba18",
+      "name": "Update rows (appointments)",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "audit_log",
+          "mode": "list",
+          "cachedResultName": "audit_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "appointment_id": "={{ $json.id }}",
+            "patient_id": "={{ $json.patient_id }}",
+            "event_type": "REMINDER_2H_SENT"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "patient_id",
+              "displayName": "patient_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "appointment_id",
+              "displayName": "appointment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "metadata",
+              "displayName": "metadata",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_by",
+              "displayName": "created_by",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1424,
+        0
+      ],
+      "id": "353f57c8-bfe9-4002-9196-4e41bac536f5",
+      "name": "insert (audit log)",
+      "credentials": {
+        "postgres": {
+          "id": "NiWqNAET24JVL8v9",
+          "name": "Supabase Connect"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "54d0dca5-15e7-4d06-9dae-77e491462cf3",
+              "name": "to",
+              "value": "={{ $json[\"phone\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "09e45163-e5b7-4e3b-a9d9-09032a4cd2f4",
+              "name": "channel",
+              "value": "SMS",
+              "type": "string"
+            },
+            {
+              "id": "8f96271f-2011-4f72-857c-41586c8aebd3",
+              "name": "text",
+              "value": "=Hi {{ $json.first_name }}, this is a reminder of your upcoming appointment at {{ $json.scheduled_local }}. Reply 1 to confirm or 2 to reschedule.",
+              "type": "string"
+            },
+            {
+              "id": "35692ce0-84bf-4f3b-ba26-8cb11e74e5c5",
+              "name": "appointment_id",
+              "value": "={{ $json[\"appointment_id\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "18b96c55-2711-4f90-bd6d-616542fbb673",
+              "name": "patient_id",
+              "value": "={{ $json[\"patient_id\"] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        0
+      ],
+      "id": "80bfa50f-c3a3-44a1-9113-ae396618da47",
+      "name": "set node (reminder payload)"
+    }
+  ],
+  "connections": {
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "set node (reminder payload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in messages table": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Update rows in a messages table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rows in a messages table": {
+      "main": [
+        [
+          {
+            "node": "Update rows (appointments)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rows (appointments)": {
+      "main": [
+        [
+          {
+            "node": "insert (audit log)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set node (reminder payload)": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in messages table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": []
+    }
+  },
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
