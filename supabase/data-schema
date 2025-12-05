@@ -1,0 +1,125 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.appointments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  patient_id uuid NOT NULL,
+  source_system_id text,
+  scheduled_start timestamp with time zone NOT NULL,
+  scheduled_end timestamp with time zone,
+  status USER-DEFINED NOT NULL DEFAULT 'SCHEDULED'::appointment_status,
+  location text,
+  provider_name text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  reminder_24h_sent_at timestamp with time zone,
+  reminder_2h_sent_at timestamp with time zone,
+  CONSTRAINT appointments_pkey PRIMARY KEY (id),
+  CONSTRAINT appointments_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+);
+CREATE TABLE public.audit_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  event_type text NOT NULL,
+  patient_id uuid,
+  appointment_id uuid,
+  metadata jsonb,
+  created_by text NOT NULL DEFAULT 'SYSTEM'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT audit_log_pkey PRIMARY KEY (id),
+  CONSTRAINT audit_log_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES public.patients(id),
+  CONSTRAINT audit_log_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(id)
+);
+CREATE TABLE public.follow_up_tasks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  patient_id uuid NOT NULL,
+  appointment_id uuid,
+  type USER-DEFINED NOT NULL,
+  description text,
+  priority USER-DEFINED NOT NULL DEFAULT 'MEDIUM'::follow_up_priority,
+  status USER-DEFINED NOT NULL DEFAULT 'OPEN'::follow_up_status,
+  risk_score integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  completed_at timestamp with time zone,
+  CONSTRAINT follow_up_tasks_pkey PRIMARY KEY (id),
+  CONSTRAINT follow_up_tasks_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES public.patients(id),
+  CONSTRAINT follow_up_tasks_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(id)
+);
+CREATE TABLE public.message_templates (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  key text NOT NULL UNIQUE,
+  channel USER-DEFINED NOT NULL,
+  description text,
+  body_template text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT message_templates_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  appointment_id uuid,
+  patient_id uuid,
+  direction USER-DEFINED NOT NULL,
+  channel USER-DEFINED NOT NULL,
+  template_key text,
+  body text NOT NULL,
+  status USER-DEFINED NOT NULL DEFAULT 'SENT'::message_status,
+  provider_message_id text,
+  sent_at timestamp with time zone,
+  received_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  phone text,
+  provider_status text,
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT messages_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(id),
+  CONSTRAINT messages_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+);
+CREATE TABLE public.notifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  message text NOT NULL,
+  type text NOT NULL CHECK (type = ANY (ARRAY['urgent_task'::text, 'missed_appointment'::text, 'patient_message'::text])),
+  related_id uuid,
+  is_read boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT notifications_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.patient_invitations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  patient_id uuid NOT NULL,
+  token text NOT NULL UNIQUE,
+  expires_at timestamp with time zone NOT NULL,
+  used_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT patient_invitations_pkey PRIMARY KEY (id),
+  CONSTRAINT patient_invitations_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+);
+CREATE TABLE public.patients (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  external_id text UNIQUE,
+  first_name text NOT NULL,
+  last_name text NOT NULL,
+  phone text NOT NULL,
+  date_of_birth date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  user_id uuid UNIQUE,
+  CONSTRAINT patients_pkey PRIMARY KEY (id),
+  CONSTRAINT patients_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.user_roles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  role USER-DEFINED NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_roles_pkey PRIMARY KEY (id),
+  CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.users (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email text NOT NULL UNIQUE,
+  full_name text,
+  role USER-DEFINED NOT NULL DEFAULT 'COORDINATOR'::user_role,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  user_id uuid UNIQUE,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT users_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
